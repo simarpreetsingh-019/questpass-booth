@@ -1,0 +1,26 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "types": ["node", "dom-webcodecs"],
+    "baseUrl": ".",
+    "paths": {
+      "@/config/sponsors": ["src/shims/sponsors.ts"],
+      "@/config/theme": ["src/shims/theme.ts"],
+      "@/types": ["src/shims/types.ts"],
+      "@/features/recap/engine/draw-kit": ["src/engine/upstream/draw-kit.ts"],
+      "@/features/recap/engine/gif-encoder": ["src/shims/gif-encoder.ts"],
+      "@/features/journey/engine/render-journey": ["src/shims/journey.ts"],
+      "@/booth/fonts": ["src/core/fonts.ts"]
+    }
+  },
+  "include": ["src", "server", "test", "scripts/*.ts"]
+}
