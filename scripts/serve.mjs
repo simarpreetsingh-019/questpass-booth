@@ -14,7 +14,8 @@ const brand = nodeBrandHandler();
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
   if (path === "/api/brand") return brand(req, res);
-  const rel = path === "/" ? "demo/index.html" : path.startsWith("/dist/") ? path.slice(1) : join("demo", path);
+  const page = path.endsWith("/") ? `${path}index.html` : path;
+  const rel = page.startsWith("/dist/") ? page.slice(1) : join("demo", page);
   const file = normalize(join(root, rel));
   if (!file.startsWith(root)) return res.writeHead(403).end();
   try {

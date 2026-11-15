@@ -1,0 +1,70 @@
+# Publishes the demo (and, when the SHEET_URL variable is set, one booth per
+# row of that spreadsheet) to GitHub Pages: https://<owner>.github.io/<repo>/
+# Runs on every push to main, from the Actions tab ("Run workflow"), and
+# every hour when a sheet is set, so edits in the sheet go live on their own.
+#
+# Setup (Settings → Pages → Source: GitHub Actions; Settings → Secrets and
+# variables → Actions → Variables):
+#   SHEET_URL   the booths sheet, published as CSV (see docs/spreadsheet.md)
+#   NAMES_URL   optional: a names sheet (name, booth columns)
+#   BOOTH_BASE  optional: the base settings file (default presets/pizzadao.json)
+name: pages
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+  schedule:
+    - cron: "17 * * * *"
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event_name != 'schedule' || vars.SHEET_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts && npm rebuild esbuild
+      - run: npm run build
+      - id: pages
+        uses: actions/configure-pages@v5
+      - name: Demo and the booth script
+        run: |
+          mkdir -p _site
+          cp -R demo/. _site/
+          rm -rf _site/_site
+          cp -R dist _site/dist
+      - name: Booths from the sheet
+        if: vars.SHEET_URL != ''
+        env:
+          SHEET_URL: ${{ vars.SHEET_URL }}
+          NAMES_URL: ${{ vars.NAMES_URL }}
+          BOOTH_BASE: ${{ vars.BOOTH_BASE }}
+          SITE: ${{ steps.pages.outputs.base_url }}
+        run: |
+          node scripts/booths-from-sheet.mjs \
+            --sheet "$SHEET_URL" \
+            ${NAMES_URL:+--names "$NAMES_URL"} \
+            --base "${BOOTH_BASE:-presets/pizzadao.json}" \
+            --base-url "$SITE/booths" \
+            --script "$SITE/dist/questpass-booth.js" \
+            --out _site/booths
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

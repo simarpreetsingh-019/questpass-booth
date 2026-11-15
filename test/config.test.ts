@@ -58,3 +58,18 @@ test("a normalized config stays the same when normalized again", () => {
   const once = normalizeConfig({ title: "Party", words: { "neon.sign": { mode: "fixed", text: "PIZZA" } } });
   assert.deepEqual(normalizeConfig(JSON.parse(JSON.stringify(once))), once);
 });
+
+test("packs, frame order and the person settings", async () => {
+  await import("../src/packs/pizza");
+  const plain = normalizeConfig({});
+  assert.ok(!plain.frames.allow || plain.frames.allow === "all");
+  const { offeredFrames } = await import("../src/core/config");
+  assert.ok(!offeredFrames(plain).includes("pizza-box" as never), "pack frames only with the pack");
+  const pizza = normalizeConfig({ packs: ["pizza", "BAD PACK"], frames: { first: ["pizza-mafia", "nope"], default: "pizza-box" }, person: { nameLabel: "Your mafia name", names: ["A", "A", "", 5], suggest: { first: ["Mozz"], last: ["DeNiro"] } } });
+  assert.deepEqual(pizza.packs, ["pizza"]);
+  assert.equal(pizza.frames.default, "pizza-box");
+  assert.equal(offeredFrames(pizza)[0], "pizza-mafia");
+  assert.deepEqual(pizza.person.names, ["A"]);
+  assert.equal(pizza.person.nameLabel, "Your mafia name");
+  assert.equal(pizza.person.wholeName, true);
+});

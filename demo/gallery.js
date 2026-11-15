@@ -1,5 +1,5 @@
 // Draws every frame the settings offer, at one size, with sample photos.
-import { drawPreview, listFrames, normalizeConfig, offeredFrames, samplePhotos } from "/dist/questpass-booth.js";
+import { drawPreview, listFrames, normalizeConfig, offeredFrames, samplePhotos } from "./dist/questpass-booth.js";
 
 const params = new URLSearchParams(location.search);
 const ratio = params.get("ratio") || "";

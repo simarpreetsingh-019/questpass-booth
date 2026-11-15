@@ -273,8 +273,11 @@ export class EditorElement extends HTMLElement {
 
   private frames() {
     const c = this.cfg;
-    const all = listFrames();
+    // a pack's frames only once the pack is on
+    const all = listFrames().filter((f) => !f.pack || c.packs.includes(f.pack));
     const allowed = (id: string) => c.frames.allow === "all" || (c.frames.allow as string[]).includes(id);
+    const packs = [...new Set(listFrames().map((f) => f.pack).filter((p): p is string => Boolean(p)))];
+    const packChecks = packs.map((p) => this.check(`${p[0]!.toUpperCase()}${p.slice(1)} frames`, c.packs.includes(p), (c, v) => (c.packs = v ? [...new Set([...c.packs, p])] : c.packs.filter((x) => x !== p)), true));
     const grid = h("div", { class: "frames-grid" });
     for (const f of all) {
       const el = h("input", { type: "checkbox", checked: allowed(f.id) });
@@ -299,6 +302,7 @@ export class EditorElement extends HTMLElement {
       "details",
       { class: "card" },
       h("summary", null, `Frames (${c.frames.allow === "all" ? "all " + all.length : c.frames.allow.length})`),
+      ...packChecks,
       h("label", { class: "field" }, "Opens with", def),
       h("div", { class: "row" }, h("button", { class: "small", onclick: () => this.update((c) => (c.frames.allow = "all"), true) }, "Tick all")),
       grid,

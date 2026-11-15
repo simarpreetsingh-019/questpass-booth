@@ -38,6 +38,12 @@ A booth is one JSON object. Every field is optional. `normalizeConfig()` fills i
 | `credit` | true | "made with QuestPass". Please keep it on. |
 | `frames.allow` | "all" | `"all"` or a list of frame ids (see `listFrames()`). |
 | `frames.default` | "polaroid" | Must be one of the allowed frames. |
+| `frames.first` | [] | Frames shown first in the picker, in this order. |
+| `packs` | [] | Frame packs to include, e.g. `["pizza"]` for the five pizza frames. |
+| `person.wholeName` | true | Show the whole name ("Chorizo Corleone"), not just the first word. |
+| `person.nameLabel`, `person.lineLabel` | "Your name", "Caption" | The two fields' labels ("Your mafia name", "Your line"). The line is printed under the photo. |
+| `person.names` | [] | Names offered as people type (up to 5,000), e.g. members' mafia names. Anyone who opens the booth can see them. |
+| `person.suggest` | empty | `{ "first": [...], "last": [...] }`: a 🎲 button makes a name from one word of each. |
 | `words` | {} | Per text space: `mode` is `fixed` (your words), `edit` (people type their own, starting from your text) or `off`. Ids come from `listWordSlots()`. |
 | `video.enabled` | true | Show the video maker. |
 | `video.qr` | true | A QR code and link on the last card (needs `share.link`). |

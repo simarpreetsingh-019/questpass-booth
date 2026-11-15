@@ -17,6 +17,7 @@ writeFileSync(join(root, "src/core/version.ts"), `export const VERSION = "${pkg.
 
 const banner = { js: `/*! QuestPass Booth ${pkg.version} | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */` };
 await build({ entryPoints: [join(root, "src/core/index.ts")], outfile: join(dist, "questpass-booth.js"), bundle: true, format: "esm", target: "es2020", platform: "browser", minify: true, sourcemap: true, legalComments: "eof", banner, tsconfig: join(root, "tsconfig.json") });
+await build({ entryPoints: [join(root, "src/core/node.ts")], outfile: join(dist, "config.js"), bundle: true, packages: "external", format: "esm", target: "node18", platform: "node", banner, tsconfig: join(root, "tsconfig.json") });
 await build({ entryPoints: [join(root, "server/index.ts")], outfile: join(dist, "server.js"), bundle: true, format: "esm", target: "node18", platform: "node", sourcemap: true, banner, tsconfig: join(root, "tsconfig.json") });
 
 // fonts: only the files the frames use, and each family's licence
@@ -44,4 +45,4 @@ for (const f of walk(join(dist, "types")).filter((f) => f.endsWith(".d.ts"))) {
   writeFileSync(f, s);
 }
 const size = (f) => (statSync(join(dist, f)).size / 1024).toFixed(0) + " KB";
-console.log(`built ${pkg.version}: questpass-booth.js ${size("questpass-booth.js")}, server.js ${size("server.js")}, ${FONT_FILES.length} fonts`);
+console.log(`built ${pkg.version}: questpass-booth.js ${size("questpass-booth.js")}, config.js ${size("config.js")}, server.js ${size("server.js")}, ${FONT_FILES.length} fonts`);
