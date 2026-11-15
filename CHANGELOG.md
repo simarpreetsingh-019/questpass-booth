@@ -7,4 +7,4 @@ First release.
 - `<questpass-booth-editor>`: set up a booth with a live preview, fill in a brand from its website, and export the settings as JSON.
 - Functions: `renderPhoto`, `makeVideo`, `drawPreview`, `createPreviewer`, `listFrames`, `listTracks`, `normalizeConfig` and more.
 - `questpass-booth/server`: a brand lookup with protection against server-side request forgery.
-- Engine from QuestPass 55a6a35.
+- Engine from QuestPass 5339307.
