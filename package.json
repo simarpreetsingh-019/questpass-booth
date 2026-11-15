@@ -55,8 +55,8 @@
     "@types/dom-webcodecs": "^0.1.19",
     "@types/node": "20.14.11",
     "@types/qrcode": "1.5.5",
-    "esbuild": "0.24.0",
-    "tsx": "4.19.1",
+    "esbuild": "^0.25.5",
+    "tsx": "^4.20.3",
     "typescript": "5.5.4"
   }
 }

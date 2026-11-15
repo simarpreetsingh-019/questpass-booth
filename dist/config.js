@@ -2922,6 +2922,7 @@ function pizzaGeo(W, H, u) {
   const t = tallness(W, H);
   const s = t >= 1.5 ? Math.min(W * 0.86, H * 0.55) : t >= 1.2 ? Math.min(W * 0.74, H * 0.6) : H * 0.62;
   return { s, cx: W / 2, cy: t >= 1.5 ? H * 0.46 : H * 0.48 };
+  void u;
 }
 function board(ctx, f) {
   const { W, H, u, pal } = f;
