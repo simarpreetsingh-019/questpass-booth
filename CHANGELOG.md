@@ -13,5 +13,8 @@ First release.
 - `registerFrame` and `registerWordSlot` for your own frames; `booth.person` (name, line, picture) for sites that know who's using it.
 - `scripts/booths-from-sheet.mjs` and the `pages` workflow: one booth per spreadsheet row, hosted on GitHub Pages and rebuilt hourly.
 - `questpass-booth/config`: the settings functions for Node.
+- The credit "QuestPass · @simarpreet_019" is on every frame and video, with no setting.
+- A public booth page and a separate organisers' setup page (`npm run setup`); with a sheet, the published site has only the booths.
+- docs/pizzadao.md: the guide for Pizza DAO organisers.
 - A ready-made Pizza DAO theme (`presets/pizzadao.json`), and `brand.headingFont: "condensed"`.
 - Engine from QuestPass 5339307.

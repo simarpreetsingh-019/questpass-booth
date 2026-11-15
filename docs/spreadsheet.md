@@ -21,7 +21,7 @@ The first row holds the column names. Only `slug` (or `place`) is required; ever
 | `first_frames` | `pizza-mafia, pizza-box` | These first in the picker. |
 | `packs` | `pizza` | Frame packs to include. |
 | `name_label`, `line_label` | Your mafia name, Your line | The two fields' labels. |
-| `credit`, `video` | yes / no | "made with QuestPass", and the video maker. |
+| `video` | yes / no | The video maker. |
 | `words.<space>` | `words.neon.sign` = PIZZA TIME | A frame's text. Just words: always these words. `edit: words`: people can change them. `off`: left off. |
 
 Ids for the text spaces are listed in the editor and by `listWordSlots()`, for example `neon.sign`, `pizza-mafia.crime`, `pizza-receipt.item1`, `pizza-table.special`.

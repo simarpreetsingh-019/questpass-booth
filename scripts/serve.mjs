@@ -1,5 +1,6 @@
-// The demo, locally: serves demo/ and dist/, and the brand lookup at /api/brand.
-// npm run build && npm run demo → http://localhost:8787
+// The demo and the organisers' setup, locally: serves demo/ and dist/, and
+// the brand and picture lookups at /api/brand and /api/avatar.
+// npm run build && npm run setup → http://localhost:8787/setup.html
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
@@ -28,4 +29,8 @@ createServer(async (req, res) => {
   } catch {
     res.writeHead(404).end("not found");
   }
-}).listen(port, () => console.log(`QuestPass Booth demo: http://localhost:${port}`));
+}).listen(port, () => {
+  console.log(`Booth (what the public sees):  http://localhost:${port}/`);
+  console.log(`Setup (organisers):            http://localhost:${port}/setup.html`);
+  console.log(`Every frame:                   http://localhost:${port}/gallery.html`);
+});

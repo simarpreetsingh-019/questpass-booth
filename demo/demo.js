@@ -6,6 +6,19 @@ if (location.port === "8787") {
   booth.setAttribute("avatar-endpoint", "/api/avatar");
   editor.setAttribute("brand-endpoint", "/api/brand");
 }
+// the organisers' main action: save the settings file (booth-base.json) to put in the repo
+const save = document.createElement("button");
+save.textContent = "⬇ Save settings file";
+save.style.cssText = "background:#eee;color:#111;font-weight:700";
+save.onclick = () => {
+  const blob = new Blob([JSON.stringify(editor.config, null, 2)], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "booth-base.json";
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+};
+document.querySelector("nav").appendChild(save);
 const log = document.getElementById("log");
 // the event log is for developers: shown only with ?debug in the address
 log.hidden = !new URLSearchParams(location.search).has("debug");

@@ -2,22 +2,15 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QuestPass Booth demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Photo booth</title>
   <link rel="stylesheet" href="demo.css" />
   <script type="module" src="dist/questpass-booth.js"></script>
-  <script type="module" src="demo.js"></script>
+  <script type="module" src="booth.js"></script>
 </head>
-<body>
-  <header>
-    <h1>QuestPass Booth</h1>
-    <p>A branded photo booth and video maker that runs on the phone. Photos never leave the device.</p>
-    <nav><button data-tab="booth" aria-pressed="true">Booth</button><button data-tab="editor" aria-pressed="false">Set up a booth</button></nav>
-  </header>
-  <main>
-    <section id="booth"><questpass-booth config-src="pizzadao.json"></questpass-booth></section>
-    <section id="editor" hidden><questpass-booth-editor config-src="pizzadao.json"></questpass-booth-editor></section>
-    <pre id="log" aria-live="polite" hidden></pre>
-  </main>
+<body class="booth-only">
+  <!-- the public page: the booth and nothing else (organisers set it up on setup.html) -->
+  <questpass-booth config-src="pizzadao.json"></questpass-booth>
+  <pre id="log" aria-live="polite" hidden></pre>
 </body>
 </html>

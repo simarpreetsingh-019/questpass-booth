@@ -1,13 +1,20 @@
-# Publishes the demo (and, when the SHEET_URL variable is set, one booth per
-# row of that spreadsheet) to GitHub Pages: https://<owner>.github.io/<repo>/
-# Runs on every push to main, from the Actions tab ("Run workflow"), and
-# every hour when a sheet is set, so edits in the sheet go live on their own.
+# Publishes to GitHub Pages: https://<owner>.github.io/<repo>/
+#  - With the SHEET_URL variable set (an organiser's copy, e.g. Pizza DAO's):
+#    the public site is the booths only, one per row of the sheet, at
+#    /booths/<slug>/. No setup page, no editor: organisers set up booths with
+#    `npm run setup` on their computer, the settings file in the repo, and
+#    the sheet. Rebuilt every hour, on every push, and with "Run workflow".
+#  - Without it (this repository): the demo, the setup page and the gallery.
 #
-# Setup (Settings → Pages → Source: GitHub Actions; Settings → Secrets and
-# variables → Actions → Variables):
-#   SHEET_URL   the booths sheet, published as CSV (see docs/spreadsheet.md)
-#   NAMES_URL   optional: a names sheet (name, booth columns)
-#   BOOTH_BASE  optional: the base settings file (default presets/pizzadao.json)
+# Settings → Pages → Source: GitHub Actions. Settings → Secrets and
+# variables → Actions → Variables:
+#   SHEET_URL     the booths sheet, published as CSV (docs/spreadsheet.md)
+#   NAMES_URL     optional: a names sheet (name, booth columns)
+#   BOOTH_BASE    optional: the settings file (default: booth-base.json if
+#                 the repo has one, else presets/pizzadao.json)
+#   BOOTH_LIST    optional: "false" hides the page listing every booth
+#   PUBLIC_SETUP  optional: "true" also publishes the setup page (it can't
+#                 change live booths, but it's off by default)
 name: pages
 on:
   push:
@@ -35,27 +42,45 @@ jobs:
       - run: npm run build
       - id: pages
         uses: actions/configure-pages@v5
-      - name: Demo and the booth script
+      - name: The booth script, and the demo (this repository only)
+        env:
+          SHEET_URL: ${{ vars.SHEET_URL }}
+          PUBLIC_SETUP: ${{ vars.PUBLIC_SETUP }}
         run: |
           mkdir -p _site
-          cp -R demo/. _site/
-          rm -rf _site/_site
           cp -R dist _site/dist
+          if [ -z "$SHEET_URL" ]; then
+            cp -R demo/. _site/
+            rm -rf _site/_site
+          elif [ "$PUBLIC_SETUP" = "true" ]; then
+            cp demo/setup.html demo/demo.js demo/demo.css demo/gallery.html demo/gallery.js _site/
+          fi
       - name: Booths from the sheet
         if: vars.SHEET_URL != ''
         env:
           SHEET_URL: ${{ vars.SHEET_URL }}
           NAMES_URL: ${{ vars.NAMES_URL }}
           BOOTH_BASE: ${{ vars.BOOTH_BASE }}
+          BOOTH_LIST: ${{ vars.BOOTH_LIST }}
+          PUBLIC_SETUP: ${{ vars.PUBLIC_SETUP }}
           SITE: ${{ steps.pages.outputs.base_url }}
         run: |
+          BASE="${BOOTH_BASE:-}"
+          if [ -z "$BASE" ]; then BASE=presets/pizzadao.json; [ -f booth-base.json ] && BASE=booth-base.json; fi
           node scripts/booths-from-sheet.mjs \
             --sheet "$SHEET_URL" \
             ${NAMES_URL:+--names "$NAMES_URL"} \
-            --base "${BOOTH_BASE:-presets/pizzadao.json}" \
+            --base "$BASE" \
             --base-url "$SITE/booths" \
             --script "$SITE/dist/questpass-booth.js" \
             --out _site/booths
+          [ "$PUBLIC_SETUP" = "true" ] && cp "$BASE" _site/pizzadao.json
+          if [ "$BOOTH_LIST" = "false" ]; then
+            rm -f _site/booths/index.html _site/booths/booths.json
+            printf '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Photo booth</title><body style="font:16px system-ui;padding:24px">Scan the QR code at your party to open its photo booth.</body>' > _site/index.html
+          else
+            printf '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=booths/"><a href="booths/">Photo booths</a>' > _site/index.html
+          fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

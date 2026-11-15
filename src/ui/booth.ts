@@ -217,7 +217,7 @@ export class BoothElement extends HTMLElement {
         this.controls,
         this.statusEl,
         this.panel,
-        c.credit ? h("p", { class: "credit" }, "Made with ", h("a", { href: "https://github.com/simarpreetsingh-019/questpass-booth", target: "_blank", rel: "noopener noreferrer" }, "QuestPass Booth")) : null,
+        h("p", { class: "credit" }, "Made with ", h("a", { href: "https://github.com/simarpreetsingh-019/questpass-booth", target: "_blank", rel: "noopener noreferrer" }, "QuestPass Booth"), " by ", h("a", { href: "https://x.com/simarpreet_019", target: "_blank", rel: "noopener noreferrer" }, "@simarpreet_019")),
       ),
     ]);
     this.renderControls();
@@ -755,7 +755,7 @@ export class BoothElement extends HTMLElement {
       bar,
       cancel,
       out,
-      this.cfg.credit ? h("p", { class: "note" }, `The video ends with "${CREDIT_LINE}".`) : null,
+      h("p", { class: "note" }, `The video ends with “Made with QuestPass”.`),
     );
   }
 }

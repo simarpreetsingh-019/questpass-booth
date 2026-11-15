@@ -48,8 +48,6 @@ export interface BoothConfig {
   };
   /** show the brand's logo on the frames and the video's cards */
   showBrand: boolean;
-  /** "made with QuestPass" on the frames and the video (please keep it on; see NOTICE) */
-  credit: boolean;
   frames: {
     /** the frames people can pick, or all of them (all built-in frames, plus the frames of the packs below) */
     allow: FrameId[] | "all";
@@ -113,7 +111,6 @@ export function defaultConfig(): BoothConfig {
     dates: "",
     brand: { name: "", website: "", logo: "", colors: { ...DEFAULT_COLORS }, headingFont: "default" },
     showBrand: true,
-    credit: true,
     frames: { allow: "all", default: "polaroid", first: [] },
     packs: [],
     person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] }, handle: { ask: false, label: "Your username", networks: ["telegram", "x", "instagram"] }, picture: false },
@@ -223,7 +220,6 @@ export function normalizeConfig(input: unknown): BoothConfig {
       headingFont: brand.headingFont === "condensed" ? "condensed" : "default",
     },
     showBrand: bool(c.showBrand, d.showBrand),
-    credit: bool(c.credit, d.credit),
     frames: { allow, default: def, first: Array.isArray(frames.first) ? [...new Set(frames.first.filter((id): id is FrameId => isFrameId(id) && offered.includes(id)))] : [] },
     packs,
     person: {

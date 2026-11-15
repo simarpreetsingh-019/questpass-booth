@@ -12,3 +12,5 @@ main { padding: 0 16px 32px; max-width: 1100px; margin: 0 auto; display: grid; g
 .gallery figure { margin: 0; display: grid; gap: 6px; }
 .gallery canvas { width: 100%; height: auto; border-radius: 6px; background: #222; }
 .gallery figcaption { font-size: 12px; opacity: .75; }
+body.booth-only { background: #0b0b10; }
+body.booth-only questpass-booth { border-radius: 0; min-height: 100vh; }

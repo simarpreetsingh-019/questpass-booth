@@ -2390,6 +2390,9 @@ function listFrames() {
 }
 var isFrameId = (v) => typeof v === "string" && FRAME_IDS.includes(v);
 
+// src/core/credit.ts
+var CREDIT_LINE = "QuestPass \xB7 @simarpreet_019";
+
 // src/core/handle.ts
 var NETWORKS = {
   telegram: { label: "Telegram", color: "#2AABEE", mark: "\u2708", url: (u) => `https://t.me/${u}` },
@@ -2409,7 +2412,6 @@ function defaultConfig() {
     dates: "",
     brand: { name: "", website: "", logo: "", colors: { ...DEFAULT_COLORS }, headingFont: "default" },
     showBrand: true,
-    credit: true,
     frames: { allow: "all", default: "polaroid", first: [] },
     packs: [],
     person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] }, handle: { ask: false, label: "Your username", networks: ["telegram", "x", "instagram"] }, picture: false },
@@ -2500,7 +2502,6 @@ function normalizeConfig(input) {
       headingFont: brand.headingFont === "condensed" ? "condensed" : "default"
     },
     showBrand: bool(c.showBrand, d.showBrand),
-    credit: bool(c.credit, d.credit),
     frames: { allow, default: def, first: Array.isArray(frames.first) ? [...new Set(frames.first.filter((id) => isFrameId(id) && offered.includes(id)))] : [] },
     packs,
     person: {
@@ -2590,8 +2591,10 @@ function logo(ctx, f, cx, y, h) {
   return h;
 }
 function credit(ctx, f, color2) {
-  if (!f.brand?.credit) return;
-  text(ctx, f.brand.credit, f.W - 28 * f.u, f.H - 26 * f.u, MONO_LIGHT(18 * f.u), color2, "right");
+  ctx.save();
+  ctx.globalAlpha = Math.max(ctx.globalAlpha, 0.85);
+  text(ctx, f.brand?.credit || CREDIT_LINE, f.W - 28 * f.u, f.H - 26 * f.u, MONO(20 * f.u), color2, "right");
+  ctx.restore();
 }
 function mat(ctx, R, pad, fill2, stroke, line = 0) {
   ctx.fillStyle = fill2;

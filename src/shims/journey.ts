@@ -19,6 +19,8 @@ export interface JourneyInput {
   handle?: string;
   /** where the handle is from: "telegram", "x", "instagram" */
   network?: string;
+  /** the frame prints no credit of its own: the booth's overlay adds it */
+  addCredit?: boolean;
   avatar: RecapAvatar;
   role: string;
   city: string;

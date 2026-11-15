@@ -103,7 +103,7 @@ function configFor(row, base, names, warn, fallbackLink) {
     else if (k === "packs") c.packs = list(v);
     else if (k === "name_label") c.person.nameLabel = v;
     else if (k === "line_label") c.person.lineLabel = v;
-    else if (k === "credit") c.credit = yes(v);
+    else if (k === "credit") warn(`the credit can't be turned off: column "credit" ignored`);
     else if (k === "video") c.video.enabled = yes(v);
     else if (k.startsWith("words.")) {
       const id = k.slice(6);

@@ -8,7 +8,8 @@ import type { JourneyInput } from "../shims/journey";
 import type { FrameBrand } from "../engine/upstream/frames";
 import { type OpenReel } from "../engine/upstream/reel";
 import { type BoothColors, type BoothConfig } from "./config";
-export declare const CREDIT_LINE = "made with QuestPass";
+import { CREDIT_LINE } from "./credit";
+export { CREDIT_LINE };
 /** The engine's full theme from the booth's four colours. */
 export declare function themeOf(c: BoothColors): SponsorTheme;
 export declare function sponsorOf(c: BoothConfig, logo: string): SponsorBrand;

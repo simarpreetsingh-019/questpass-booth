@@ -34,8 +34,6 @@ export interface BoothConfig {
     };
     /** show the brand's logo on the frames and the video's cards */
     showBrand: boolean;
-    /** "made with QuestPass" on the frames and the video (please keep it on; see NOTICE) */
-    credit: boolean;
     frames: {
         /** the frames people can pick, or all of them (all built-in frames, plus the frames of the packs below) */
         allow: FrameId[] | "all";

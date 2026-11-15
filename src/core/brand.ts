@@ -12,7 +12,9 @@ import { setWholeNames, type OpenReel } from "../engine/upstream/reel";
 import { type BoothColors, type BoothConfig } from "./config";
 import { loadBoothFonts } from "./fonts";
 
-export const CREDIT_LINE = "made with QuestPass";
+import { CREDIT_LINE } from "./credit";
+
+export { CREDIT_LINE };
 
 /** A short, stable id for a string (so a changed logo isn't mistaken for the old one in the engine's caches). */
 function hash(s: string): string {
@@ -59,7 +61,7 @@ export function frameBrandOf(c: BoothConfig, logo: string): FrameBrand {
     place: c.place,
     mark: c.brand.name || c.title,
     site: hostOf(c.share.link || c.brand.website),
-    credit: c.credit ? CREDIT_LINE : "",
+    credit: CREDIT_LINE,
     sponsor: c.showBrand && Boolean(logo || c.brand.name),
     adLogo: logo || undefined,
   };
@@ -67,7 +69,7 @@ export function frameBrandOf(c: BoothConfig, logo: string): FrameBrand {
 
 export function openReelOf(c: BoothConfig): OpenReel {
   const sponsor = c.showBrand && Boolean(c.brand.logo || c.brand.name);
-  return { dates: c.dates, sponsor, credit: c.credit, outroQr: c.video.qr && Boolean(c.share.link), outroSponsor: sponsor && c.video.showBrand };
+  return { dates: c.dates, sponsor, credit: true, outroQr: c.video.qr && Boolean(c.share.link), outroSponsor: sponsor && c.video.showBrand };
 }
 
 /** The person on the frames and the video: just their name, typed in the booth (nothing else is asked). */

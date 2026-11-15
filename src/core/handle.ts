@@ -6,6 +6,7 @@
 import { F, text } from "../engine/upstream/draw-kit";
 import type { FrameCtx } from "../engine/upstream/frames";
 import { roundRect } from "../engine/upstream/reel";
+import { CREDIT_LINE } from "./credit";
 
 export type Network = "telegram" | "x" | "instagram";
 
@@ -33,6 +34,7 @@ export function cleanHandle(input: unknown): string {
 /** The tag over the photo (drawn on every frame, after the frame itself). Nothing without a handle or a picture. */
 export function drawTag(ctx: CanvasRenderingContext2D, f: FrameCtx) {
   const j = f.journey;
+  if (j.addCredit) text(ctx, CREDIT_LINE, f.W / 2, f.H - 20 * f.u, F.mono(17 * f.u, 600), "rgba(255,255,255,0.75)");
   const handle = j.handle ?? "";
   const pic = j.avatar.kind === "image" ? j.avatar.image : null;
   if (!handle && !pic) return;

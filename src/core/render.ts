@@ -80,6 +80,8 @@ async function stillOptions(o: FrameOptions) {
   const caption = (o.caption ?? "").slice(0, 60);
   const person = personOf(o.name ?? "", cfg);
   if (o.avatar) person.avatar = { kind: "image", image: await toBitmap(o.avatar, 1024) };
+  // the one built-in frame without a credit line of its own
+  person.addCredit = frame === "story";
   const username = cleanHandle(o.handle?.username);
   if (username && cfg.person.handle.ask) {
     person.handle = `@${username}`;

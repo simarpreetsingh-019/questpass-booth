@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="robots" content="noindex" />
+  <title>Booth setup</title>
+  <link rel="stylesheet" href="demo.css" />
+  <script type="module" src="dist/questpass-booth.js"></script>
+  <script type="module" src="demo.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Booth setup (organisers)</h1>
+    <p>Set the look here, then save the settings file and publish it (see docs/pizzadao.md). Nothing here changes a live booth by itself.</p>
+    <nav><button data-tab="editor" aria-pressed="true">Settings</button><button data-tab="booth" aria-pressed="false">Try the booth</button></nav>
+  </header>
+  <main>
+    <section id="editor"><questpass-booth-editor config-src="pizzadao.json"></questpass-booth-editor></section>
+    <section id="booth" hidden><questpass-booth config-src="pizzadao.json"></questpass-booth></section>
+    <pre id="log" aria-live="polite" hidden></pre>
+  </main>
+</body>
+</html>

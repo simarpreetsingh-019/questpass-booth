@@ -14,6 +14,7 @@ import { mix, sponsorLogo, withA, type FrameCtx, type FrameDef, type FrameGroup,
 import { roundRect } from "../engine/upstream/reel";
 import { registerWordSlot, type WordMode } from "../core/config";
 import { registerFrame } from "../core/frames-meta";
+import { CREDIT_LINE } from "../core/credit";
 
 type Ctx = CanvasRenderingContext2D;
 type Font = (px: number) => string;
@@ -92,10 +93,12 @@ function logo(ctx: Ctx, f: FrameCtx, cx: number, y: number, h: number): number {
   return h;
 }
 
-/** "made with QuestPass", small, bottom right (when the booth keeps the credit). */
+/** The credit, small, bottom right (on every frame; see CREDIT_LINE). */
 function credit(ctx: Ctx, f: FrameCtx, color: string) {
-  if (!f.brand?.credit) return;
-  text(ctx, f.brand.credit, f.W - 28 * f.u, f.H - 26 * f.u, MONO_LIGHT(18 * f.u), color, "right");
+  ctx.save();
+  ctx.globalAlpha = Math.max(ctx.globalAlpha, 0.85);
+  text(ctx, f.brand?.credit || CREDIT_LINE, f.W - 28 * f.u, f.H - 26 * f.u, MONO(20 * f.u), color, "right");
+  ctx.restore();
 }
 
 /** The photo's border: a mat of `pad` around the window. */

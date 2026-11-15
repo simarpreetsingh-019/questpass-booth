@@ -36,6 +36,7 @@
     "test": "tsx --test test/*.test.ts",
     "check": "npm run typecheck && npm test && npm run build",
     "demo": "node scripts/serve.mjs",
+    "setup": "node scripts/serve.mjs --setup",
     "sync-engine": "sh scripts/sync-engine.sh"
   },
   "dependencies": {

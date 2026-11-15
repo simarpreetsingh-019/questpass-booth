@@ -87,3 +87,11 @@ test("usernames are cleaned from whatever is pasted", async () => {
   assert.deepEqual(c.person.handle.networks, ["telegram"]);
   assert.equal(c.person.picture, true);
 });
+
+test("the credit is on every frame and can't be turned off", async () => {
+  const { frameBrandOf, openReelOf } = await import("../src/core/brand");
+  const c = normalizeConfig({ credit: false });
+  assert.equal((c as unknown as Record<string, unknown>).credit, undefined);
+  assert.equal(frameBrandOf(c, "").credit, "QuestPass · @simarpreet_019");
+  assert.equal(openReelOf(c).credit, true);
+});

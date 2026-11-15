@@ -283,14 +283,14 @@ export class EditorElement extends HTMLElement {
     const packs = [...new Set(listFrames().map((f) => f.pack).filter((p): p is string => Boolean(p)))];
     const packChecks = packs.map((p) => this.check(`${p[0]!.toUpperCase()}${p.slice(1)} frames`, c.packs.includes(p), (c, v) => (c.packs = v ? [...new Set([...c.packs, p])] : c.packs.filter((x) => x !== p)), true));
     const grid = h("div", { style: { display: "grid", gap: "4px" } });
-    let lastGroup = "";
-    let groupGrid = h("div", { class: "frames-grid" });
+    // one heading per group, pack groups (Pizza frames) first
+    const groups = new Map<string, HTMLDivElement>();
     for (const f of [...all].sort((a, b) => Number(!a.pack) - Number(!b.pack))) {
-      if (f.group !== lastGroup) {
-        lastGroup = f.group;
-        groupGrid = h("div", { class: "frames-grid" });
-        grid.append(h("strong", { style: { marginTop: "8px" } }, f.group), groupGrid);
-      }
+      if (!groups.has(f.group)) groups.set(f.group, h("div", { class: "frames-grid" }));
+    }
+    for (const [g, el] of groups) grid.append(h("strong", { style: { marginTop: "8px" } }, g), el);
+    for (const f of all) {
+      const groupGrid = groups.get(f.group)!;
       const el = h("input", { type: "checkbox", checked: allowed(f.id) });
       el.addEventListener("change", () =>
         this.update((c) => {
@@ -371,8 +371,7 @@ export class EditorElement extends HTMLElement {
       this.check("Ask for a username (Telegram, X, Instagram), shown on every frame", c.person.handle.ask, (c, v) => (c.person.handle.ask = v)),
       this.check("Let people add their picture (upload, or their Telegram or X picture)", c.person.picture, (c, v) => (c.person.picture = v)),
       this.check("Show whole names (mafia names), not just the first word", c.person.wholeName, (c, v) => (c.person.wholeName = v)),
-      this.check(`“${CREDIT_LINE}” on the frames and video`, c.credit, (c, v) => (c.credit = v)),
-      h("p", { class: "note" }, "QuestPass Booth is free and open source. Keeping the credit on is how it stays that way."),
+      h("p", { class: "note" }, `Every frame and video carries “${CREDIT_LINE}”: QuestPass Booth is free and open source, and that's its credit.`),
     );
   }
 

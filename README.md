@@ -32,7 +32,9 @@ Make the settings file with the editor:
 </script>
 ```
 
-Or try both in the demo: `npm install && npm run build && npm run demo`, then open http://localhost:8787 (every frame: http://localhost:8787/gallery.html; the developer event log: add `?debug`).
+Or try it: `npm install && npm run build && npm run setup`, then open http://localhost:8787 for the booth as guests see it, http://localhost:8787/setup.html to set it up, and http://localhost:8787/gallery.html for every frame (add `?debug` to the booth for the developer event log).
+
+**Public booths, private setup.** Put only `<questpass-booth>` on public pages. The editor belongs on the organisers' own computer (`npm run setup`) or behind your site's login. It only produces a settings file, so nobody can change a live booth with it.
 
 ## What's in here
 
@@ -43,6 +45,7 @@ Or try both in the demo: `npm install && npm run build && npm run demo`, then op
 | JavaScript functions | `renderPhoto`, `makeVideo`, `drawPreview`, `listFrames`… to build your own screens. |
 | `questpass-booth/server` | Optional brand lookup for your server, behind "Fill in from website". |
 
+- **[Pizza DAO guide](docs/pizzadao.md)**: setup, the look, a booth per city from a spreadsheet, mafia names, rsv.pizza, Discord and NFTs, your own frames.
 - [Integration guide](docs/integration.md): React, plain HTML, events, your own UI, the server.
 - [Settings reference](docs/config.md): every field of the booth's JSON.
 - [Booths from a spreadsheet](docs/spreadsheet.md): one row per city, published and updated automatically.
@@ -64,4 +67,4 @@ The frames and video engine come from QuestPass (`src/engine/upstream`, unchange
 
 Apache-2.0. You can use, change and ship it, including commercially. Keep the `LICENSE` and `NOTICE` files with any copy.
 
-The booth shows a small "made with QuestPass" line by default. You can turn it off (`credit: false`), but leaving it on is how this stays free and maintained.
+Every frame shows a small "QuestPass · @simarpreet_019" line and every video ends with "Made with QuestPass". That's the credit for this free, open-source work, so it has no setting.

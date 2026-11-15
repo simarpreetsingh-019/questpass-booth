@@ -4,6 +4,7 @@ QuestPass Booth follows [semantic versioning](https://semver.org). If you load i
 
 **Within 1.x, never:**
 - remove or rename an element, attribute, property, event, `detail` field or exported function;
+- remove the credit line from frames or videos;
 - remove a frame id, word slot id, track id or settings field, or change what a field means;
 - make an optional setting required, or start sending data anywhere.
 

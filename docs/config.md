@@ -35,7 +35,6 @@ A booth is one JSON object. Every field is optional. `normalizeConfig()` fills i
 | `brand.colors` | green on black | Four `#RRGGBB` colours. |
 | `brand.headingFont` | "default" | `"condensed"` for a bold condensed title and buttons (Asap Condensed). |
 | `showBrand` | true | The logo on the frames and the video's opening card. |
-| `credit` | true | "made with QuestPass". Please keep it on. |
 | `frames.allow` | "all" | `"all"` or a list of frame ids (see `listFrames()`). |
 | `frames.default` | "polaroid" | Must be one of the allowed frames. |
 | `frames.first` | [] | Frames shown first in the picker, in this order. |
