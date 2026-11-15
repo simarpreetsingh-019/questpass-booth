@@ -15,11 +15,15 @@ export {
   offeredFrames,
   listWordSlots,
   shareTextOf,
+  registerWordSlot,
   type BoothConfig,
   type BoothColors,
   type WordMode,
 } from "./config";
-export { listFrames, TOP_PICKS, type FrameMeta } from "./frames-meta";
+export { listFrames, registerFrame, TOP_PICKS, type FrameMeta, type CustomFrameMeta } from "./frames-meta";
+export { registerPizzaPack, PIZZA_PACK } from "../packs/pizza";
+/** The drawing types and helpers a custom frame needs (see src/packs/pizza.ts). */
+export type { FrameDef, FrameCtx, Palette, Rect } from "../engine/upstream/frames";
 export { drawPreview, createPreviewer, renderPhoto, makeVideo, listTracks, framePalettes, toBitmap, photosFor, RATIO_SIZES, type FrameOptions, type VideoOptions, type PhotoSource, type PaletteChoice, type FrameId, type Ratio } from "./render";
 export { colorsFromImage, CREDIT_LINE } from "./brand";
 export { setFontsBase } from "./fonts";

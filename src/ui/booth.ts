@@ -51,7 +51,7 @@ const queue = (job: () => void | Promise<void>) => {
 
 export class BoothElement extends HTMLElement {
   static get observedAttributes() {
-    return ["config", "config-src"];
+    return ["config", "config-src", "person-name", "person-line"];
   }
 
   private root: ShadowRoot;
@@ -111,9 +111,49 @@ export class BoothElement extends HTMLElement {
     window.removeEventListener("pagehide", this.stopCamera);
   }
 
-  attributeChangedCallback(_name: string, old: string | null, now: string | null) {
+  attributeChangedCallback(name: string, old: string | null, now: string | null) {
+    if (name === "person-name" || name === "person-line") {
+      this.person = { name: this.getAttribute("person-name") ?? undefined, line: this.getAttribute("person-line") ?? undefined };
+      return;
+    }
     // the first values are read by connectedCallback; only later changes reload
     if (this.loaded && old !== now && this.configProp === undefined) void this.load();
+  }
+
+  /**
+   * The person in the photo, filled in by the host page (e.g. from its
+   * Discord login: their mafia name, a line, their NFT as the picture on
+   * frames that show one). They can still change the name and line.
+   * avatar: an image URL (allowing CORS), Blob or ImageBitmap.
+   */
+  set person(p: { name?: string; line?: string; avatar?: string | Blob | ImageBitmap | null }) {
+    if (typeof p.name === "string") this.name = p.name.slice(0, 40);
+    if (typeof p.line === "string") this.caption = p.line.slice(0, 60);
+    if (p.avatar !== undefined) void this.setAvatar(p.avatar);
+    if (this.cfg) {
+      this.renderPanel();
+      void this.redraw();
+    }
+  }
+  get person() {
+    return { name: this.name, line: this.caption };
+  }
+
+  private avatar: ImageBitmap | null = null;
+
+  private async setAvatar(src: string | Blob | ImageBitmap | null) {
+    try {
+      if (!src) this.avatar = null;
+      else if (typeof src === "string") {
+        const r = await fetch(src, { mode: "cors", credentials: "omit", referrerPolicy: "no-referrer" });
+        if (!r.ok || !/^image\//.test(r.headers.get("content-type") ?? "")) throw new Error();
+        this.avatar = await toBitmap(await r.blob(), 1024);
+      } else this.avatar = await toBitmap(src, 1024);
+    } catch {
+      this.avatar = null;
+      this.status("The profile picture couldn't be loaded.", true);
+    }
+    if (this.cfg) void this.redraw();
   }
 
   private onHidden = () => {
@@ -202,7 +242,8 @@ export class BoothElement extends HTMLElement {
   private renderPanel() {
     clear(this.panel);
     const c = this.cfg;
-    const frames = listFrames().filter((f) => offeredFrames(c).includes(f.id));
+    const metas = new Map(listFrames().map((f) => [f.id, f]));
+    const frames = offeredFrames(c).map((id) => metas.get(id)).filter((f): f is FrameMeta => Boolean(f));
     // frames
     const strip = h("div", { class: "row scroll", role: "group", "aria-label": "Frames" });
     for (const f of frames) strip.appendChild(this.frameChip(f));
@@ -220,8 +261,8 @@ export class BoothElement extends HTMLElement {
     }
     // words
     const fields = h("div", { style: { display: "grid", gap: "10px" } });
-    fields.appendChild(this.text("Caption", this.caption, 60, (v) => (this.caption = v), "A line for the photo (optional)"));
-    fields.appendChild(this.text("Your name", this.name, 30, (v) => (this.name = v), "Shown on some frames (optional)"));
+    fields.appendChild(this.nameField());
+    fields.appendChild(this.text(c.person.lineLabel, this.caption, 60, (v) => (this.caption = v), "A line under the photo (optional)"));
     for (const s of listWordSlots().filter((s) => s.frame === this.frame)) {
       const own = c.words[s.id];
       if ((own?.mode ?? s.defaultMode) !== "edit") continue;
@@ -242,6 +283,26 @@ export class BoothElement extends HTMLElement {
       this.shots.length ? this.actions() : null,
       this.shots.length && c.video.enabled ? this.videoCard() : null,
     ]);
+  }
+
+  /** The name: typed, picked from the booth's list of names, or made up with 🎲. */
+  private nameField() {
+    const p = this.cfg.person;
+    const listId = "qp-names";
+    const input = h("input", { type: "text", value: this.name, maxLength: 40, placeholder: "Shown on the frames (optional)", autocomplete: "off", enterkeyhint: "done", list: p.names.length ? listId : undefined });
+    input.addEventListener("input", () => {
+      this.name = input.value;
+      void this.redraw();
+    });
+    const list = p.names.length ? h("datalist", { id: listId }, ...p.names.map((n) => h("option", { value: n }))) : null;
+    const dice = p.suggest.first.length && p.suggest.last.length
+      ? h("button", { class: "small", type: "button", "aria-label": "Make up a name", onclick: () => {
+          const pick = (a: string[]) => a[Math.floor(Math.random() * a.length)]!;
+          input.value = this.name = `${pick(p.suggest.first)} ${pick(p.suggest.last)}`;
+          void this.redraw();
+        } }, "🎲 Give me one")
+      : null;
+    return h("label", { class: "field" }, p.nameLabel, h("div", { class: "row", style: { flexWrap: "nowrap" } }, input, dice), list);
   }
 
   private text(label: string, value: string, max: number, onInput: (v: string) => void, hint = "") {
@@ -308,14 +369,14 @@ export class BoothElement extends HTMLElement {
 
   private async redraw() {
     const seq = ++this.renderSeq;
-    const p = await createPreviewer({ config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption });
+    const p = await createPreviewer({ config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, avatar: this.avatar ?? undefined });
     if (seq !== this.renderSeq) return;
     this.previewer = p;
     if (!this.live()) p.draw(this.view, VIEW_W, this.shown());
   }
 
   private options() {
-    return { config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, photos: this.shots.map((s) => s.image) };
+    return { config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, avatar: this.avatar ?? undefined, photos: this.shots.map((s) => s.image) };
   }
 
   private fileName(kind: string, ext: string) {

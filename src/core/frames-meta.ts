@@ -4,10 +4,12 @@
  */
 import type { IntroSound } from "../engine/upstream/music";
 import type { Ratio } from "../engine/upstream/reel";
-import { FRAMES, FRAME_IDS, type FrameId } from "../engine/upstream/frames";
+import { FRAMES, FRAME_IDS, type FrameDef, type FrameId } from "../engine/upstream/frames";
 
 export interface FrameMeta {
   id: FrameId;
+  /** the pack it belongs to ("pizza"); a booth shows a pack's frames only when its config lists the pack */
+  pack?: string;
   label: string;
   group: string;
   /** a short line on what photos it suits */
@@ -48,8 +50,42 @@ const LOOKS: Record<FrameId, Omit<FrameMeta, "id" | "label" | "group" | "photos"
 
 const strip = (label: string) => label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
 
+/** What a frame added with registerFrame says about itself. */
+export interface CustomFrameMeta {
+  best: string;
+  ratio: Ratio;
+  /** photos shown at once (default 1) */
+  photos?: number;
+  intro?: IntroSound;
+  tracks?: string[];
+  /** its group in the picker (default its FrameDef's group) */
+  group?: string;
+  pack?: string;
+  /** keep the frame's own colours when the booth uses its brand colours (a cardboard box stays cardboard) */
+  ownColors?: boolean;
+}
+
+const custom = new Map<string, CustomFrameMeta>();
+const ID = /^[a-z][a-z0-9-]{1,30}$/;
+
+/**
+ * Add a frame: `def` draws it (see src/packs/pizza.ts for complete
+ * examples), `meta` describes it. Built-in frames can't be replaced.
+ * Register before giving a booth its config, so the config can name it.
+ */
+export function registerFrame(id: string, def: FrameDef, meta: CustomFrameMeta) {
+  if (!ID.test(id)) throw new Error(`Frame id "${id}": use 2–31 lowercase letters, digits or dashes.`);
+  if (id in FRAMES && !custom.has(id)) throw new Error(`"${id}" is a built-in frame.`);
+  (FRAMES as Record<string, FrameDef>)[id] = def;
+  if (!(FRAME_IDS as string[]).includes(id)) (FRAME_IDS as string[]).push(id);
+  custom.set(id, meta);
+}
+
+/** Frames that keep their own colours under the brand's. */
+export const ownColors = (id: FrameId) => custom.get(id)?.ownColors === true;
+
 /** How many photos a frame shows at this size. */
-export const photosFor = (id: FrameId, ratio: Ratio) => (id === "booth" ? 4 : id === "dump" ? (ratio === "16:9" ? 6 : 8) : 1);
+export const photosFor = (id: FrameId, ratio: Ratio) => custom.get(id)?.photos ?? (id === "booth" ? 4 : id === "dump" ? (ratio === "16:9" ? 6 : 8) : 1);
 
 /** Every frame, the most popular first. */
 export const TOP_PICKS: FrameId[] = ["polaroid", "booth", "newspaper", "neon", "magazine", "pass", "postcard", "comic"];
@@ -57,8 +93,9 @@ export const TOP_PICKS: FrameId[] = ["polaroid", "booth", "newspaper", "neon", "
 export function listFrames(): FrameMeta[] {
   const order = [...TOP_PICKS, ...FRAME_IDS.filter((id) => !TOP_PICKS.includes(id))];
   return order.map((id) => {
-    const look = LOOKS[id];
-    const g = FRAMES[id].group;
+    const extra = custom.get(id);
+    const look = extra ? { best: extra.best, ratio: extra.ratio, intro: extra.intro ?? "takeoff", tracks: extra.tracks ?? ["happy", "drive", "house"], pack: extra.pack } : LOOKS[id];
+    const g = extra?.group ?? FRAMES[id].group;
     return { id, label: strip(FRAMES[id].label), group: g === "For devs" ? "Work & tech" : g, ...look, photos: photosFor(id, look.ratio) };
   });
 }

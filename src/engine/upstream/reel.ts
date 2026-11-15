@@ -298,7 +298,12 @@ function grainFrames(n = 4): HTMLCanvasElement[] {
   });
 }
 
-export const firstName = (n: string) => n.trim().split(/\s+/)[0] ?? n;
+/** Booths can show the whole name (a mafia name like "Chorizo Corleone") instead of the first word. */
+let wholeNames = false;
+export const setWholeNames = (on: boolean) => {
+  wholeNames = on;
+};
+export const firstName = (n: string) => (wholeNames ? n.trim() : (n.trim().split(/\s+/)[0] ?? n));
 
 /** Whether a photo shows whole (on its blurred self) in a window of this shape. */
 export function showsWhole(item: Pick<ReelItem, "fit" | "image">, aspect: number): boolean {

@@ -9,7 +9,7 @@ import { TRACKS, type IntroSound, type Track } from "../engine/upstream/music";
 import { MAX_ITEMS, RATIOS, framePalette, previewFrame, recordReel, type Quality, type Ratio, type ReelInput, type ReelItem } from "../engine/upstream/reel";
 import { normalizeConfig, offeredFrames, type BoothConfig } from "./config";
 import { personOf, prepare } from "./brand";
-import { frameMeta, photosFor } from "./frames-meta";
+import { frameMeta, ownColors, photosFor } from "./frames-meta";
 
 export type { FrameId, Ratio, Quality, IntroSound };
 export const RATIO_SIZES = RATIOS;
@@ -34,6 +34,8 @@ export interface FrameOptions {
   name?: string;
   /** the photo's caption */
   caption?: string;
+  /** their picture (e.g. a profile NFT), on frames that show one (badge, game card, story) and the video's cards */
+  avatar?: PhotoSource;
 }
 
 /** Big photos are shrunk to this on their long side (an HD Story frame is 2160×3840). */
@@ -52,6 +54,7 @@ export async function toBitmap(src: PhotoSource, maxSide = MAX_SIDE): Promise<Im
 function paletteOf(cfg: BoothConfig, frame: FrameId, choice: PaletteChoice, first: ImageBitmap | undefined): Palette | number {
   if (choice === "photo" && first) return paletteFromPhoto(framePalette(frame, 0), first);
   if (typeof choice === "number") return Math.max(0, Math.min(FRAMES[frame].palettes().length - 1, Math.round(choice)));
+  if (ownColors(frame)) return 0;
   const p = paletteFromAccent(framePalette(frame, 0), cfg.brand.colors.accent, cfg.brand.name || "Brand");
   return { ...p, accent2: cfg.brand.colors.highlight };
 }
@@ -68,6 +71,8 @@ async function stillOptions(o: FrameOptions) {
   const photos = await Promise.all(o.photos.slice(0, MAX_ITEMS).map((p) => toBitmap(p)));
   const ready = await prepare(cfg);
   const caption = (o.caption ?? "").slice(0, 60);
+  const person = personOf(o.name ?? "", cfg);
+  if (o.avatar) person.avatar = { kind: "image", image: await toBitmap(o.avatar, 1024) };
   return {
     cfg,
     frame,
@@ -77,7 +82,7 @@ async function stillOptions(o: FrameOptions) {
       frame,
       ratio,
       palette: paletteOf(cfg, frame, o.palette ?? "brand", photos[0]),
-      journey: personOf(o.name ?? "", cfg),
+      journey: person,
       link: cfg.share.link || undefined,
       note: caption,
       text: caption,

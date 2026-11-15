@@ -8,7 +8,7 @@ import { mix } from "../shims/theme";
 import type { JourneyInput } from "../shims/journey";
 import { applyCanvasTheme, preloadLogoImage } from "../engine/upstream/draw-kit";
 import type { FrameBrand } from "../engine/upstream/frames";
-import type { OpenReel } from "../engine/upstream/reel";
+import { setWholeNames, type OpenReel } from "../engine/upstream/reel";
 import { type BoothColors, type BoothConfig } from "./config";
 import { loadBoothFonts } from "./fonts";
 
@@ -124,6 +124,7 @@ export async function prepare(c: BoothConfig) {
   const sponsor = sponsorOf(c, logo);
   setActiveSponsor(sponsor);
   applyCanvasTheme(sponsor.theme);
+  setWholeNames(c.person.wholeName);
   await Promise.all([loadBoothFonts(), preloadLogoImage(logo || undefined)]);
   return { logo, sponsor, brand: frameBrandOf(c, logo), open: openReelOf(c) };
 }

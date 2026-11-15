@@ -2,6 +2,8 @@
 const booth = document.querySelector("questpass-booth");
 const editor = document.querySelector("questpass-booth-editor");
 const log = document.getElementById("log");
+// the event log is for developers: shown only with ?debug in the address
+log.hidden = !new URLSearchParams(location.search).has("debug");
 const say = (s) => (log.textContent = `${new Date().toLocaleTimeString()}  ${s}\n${log.textContent}`.slice(0, 2000));
 
 for (const b of document.querySelectorAll("nav button")) {

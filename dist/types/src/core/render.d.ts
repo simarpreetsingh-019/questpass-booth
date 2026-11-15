@@ -28,6 +28,8 @@ export interface FrameOptions {
     name?: string;
     /** the photo's caption */
     caption?: string;
+    /** their picture (e.g. a profile NFT), on frames that show one (badge, game card, story) and the video's cards */
+    avatar?: PhotoSource;
 }
 /** A photo as an ImageBitmap the frames can draw (EXIF rotation applied, very big ones shrunk). */
 export declare function toBitmap(src: PhotoSource, maxSide?: number): Promise<ImageBitmap>;

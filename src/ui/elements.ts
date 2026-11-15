@@ -1,4 +1,6 @@
 /** Defines <questpass-booth> and <questpass-booth-editor> (once; safe to load twice). */
+// packs first, so a config can name their frames
+import "../packs/pizza";
 import { BoothElement } from "./booth";
 import { EditorElement } from "./editor";
 

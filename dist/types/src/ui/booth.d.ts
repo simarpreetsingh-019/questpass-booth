@@ -50,7 +50,25 @@ export declare class BoothElement extends HTMLElement {
     set config(v: unknown);
     connectedCallback(): void;
     disconnectedCallback(): void;
-    attributeChangedCallback(_name: string, old: string | null, now: string | null): void;
+    attributeChangedCallback(name: string, old: string | null, now: string | null): void;
+    /**
+     * The person in the photo, filled in by the host page (e.g. from its
+     * Discord login: their mafia name, a line, their NFT as the picture on
+     * frames that show one). They can still change the name and line.
+     * avatar: an image URL (allowing CORS), Blob or ImageBitmap.
+     */
+    set person(p: {
+        name?: string;
+        line?: string;
+        avatar?: string | Blob | ImageBitmap | null;
+    });
+    get person(): {
+        name?: string;
+        line?: string;
+        avatar?: string | Blob | ImageBitmap | null;
+    };
+    private avatar;
+    private setAvatar;
     private onHidden;
     private loaded;
     private load;
@@ -60,6 +78,8 @@ export declare class BoothElement extends HTMLElement {
     private renderControls;
     private fileButton;
     private renderPanel;
+    /** The name: typed, picked from the booth's list of names, or made up with 🎲. */
+    private nameField;
     private text;
     private frameChip;
     private actions;

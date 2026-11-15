@@ -8,7 +8,7 @@
  */
 import { WORD_SLOTS } from "../engine/upstream/frame-words";
 import { FRAME_IDS, type FrameId } from "../engine/upstream/frames";
-import { isFrameId } from "./frames-meta";
+import { isFrameId, listFrames } from "./frames-meta";
 
 export const CONFIG_VERSION = 1;
 
@@ -50,10 +50,27 @@ export interface BoothConfig {
   /** "made with QuestPass" on the frames and the video (please keep it on; see NOTICE) */
   credit: boolean;
   frames: {
-    /** the frames people can pick, or all of them */
+    /** the frames people can pick, or all of them (all built-in frames, plus the frames of the packs below) */
     allow: FrameId[] | "all";
     /** the one it opens with */
     default: FrameId;
+    /** frames shown first in the picker, in this order */
+    first: FrameId[];
+  };
+  /** frame packs to include (["pizza"]: the Pizza DAO frames) */
+  packs: string[];
+  /** the person in the photo */
+  person: {
+    /** show the whole name ("Chorizo Corleone"), not just the first word */
+    wholeName: boolean;
+    /** the name field's label ("Your mafia name") */
+    nameLabel: string;
+    /** the line field's label ("Your line"); the line is the photo's caption */
+    lineLabel: string;
+    /** names to pick from as you type (e.g. the members' mafia names); up to 5,000 */
+    names: string[];
+    /** a 🎲 button makes a name from one word of each list (both needed) */
+    suggest: { first: string[]; last: string[] };
   };
   /** the frames' text spaces, by id (see listWordSlots): fixed words, people write, or off */
   words: Record<string, { mode: WordMode; text: string }>;
@@ -92,7 +109,9 @@ export function defaultConfig(): BoothConfig {
     brand: { name: "", website: "", logo: "", colors: { ...DEFAULT_COLORS }, headingFont: "default" },
     showBrand: true,
     credit: true,
-    frames: { allow: "all", default: "polaroid" },
+    frames: { allow: "all", default: "polaroid", first: [] },
+    packs: [],
+    person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] } },
     words: {},
     video: { enabled: true, qr: true, showBrand: true },
     share: { text: "Made at the photo booth {link}", link: "" },
@@ -160,9 +179,10 @@ export function normalizeConfig(input: unknown): BoothConfig {
   const share = isObj(c.share) ? c.share : {};
   const camera = isObj(c.camera) ? c.camera : {};
 
+  const packs = Array.isArray(c.packs) ? [...new Set(c.packs.filter((p): p is string => typeof p === "string" && /^[a-z0-9-]{1,30}$/.test(p)))].slice(0, 10) : [];
   const allowList = Array.isArray(frames.allow) ? [...new Set(frames.allow.filter(isFrameId))] : null;
   const allow: FrameId[] | "all" = allowList && allowList.length && allowList.length < FRAME_IDS.length ? allowList : "all";
-  const offered = allow === "all" ? FRAME_IDS : allow;
+  const offered = allow === "all" ? framesIn(packs) : allow;
   const def = isFrameId(frames.default) && offered.includes(frames.default) ? frames.default : offered.includes(d.frames.default) ? d.frames.default : offered[0]!;
 
   const words: BoothConfig["words"] = {};
@@ -174,6 +194,10 @@ export function normalizeConfig(input: unknown): BoothConfig {
       words[slot.id] = { mode, text: cleanText(w.text, slot.max) };
     }
   }
+
+  const person = isObj(c.person) ? c.person : {};
+  const suggest = isObj(person.suggest) ? person.suggest : {};
+  const list = (v: unknown, max: number, each: number) => (Array.isArray(v) ? [...new Set(v.map((x) => cleanText(x, each)).filter(Boolean))].slice(0, max) : []);
 
   return {
     version: CONFIG_VERSION,
@@ -194,7 +218,15 @@ export function normalizeConfig(input: unknown): BoothConfig {
     },
     showBrand: bool(c.showBrand, d.showBrand),
     credit: bool(c.credit, d.credit),
-    frames: { allow, default: def },
+    frames: { allow, default: def, first: Array.isArray(frames.first) ? [...new Set(frames.first.filter((id): id is FrameId => isFrameId(id) && offered.includes(id)))] : [] },
+    packs,
+    person: {
+      wholeName: bool(person.wholeName, d.person.wholeName),
+      nameLabel: cleanText(person.nameLabel, 30, d.person.nameLabel),
+      lineLabel: cleanText(person.lineLabel, 30, d.person.lineLabel),
+      names: list(person.names, 5000, 40),
+      suggest: { first: list(suggest.first, 500, 20), last: list(suggest.last, 500, 20) },
+    },
     words,
     video: { enabled: bool(video.enabled, d.video.enabled), qr: bool(video.qr, d.video.qr), showBrand: bool(video.showBrand, d.video.showBrand) },
     share: { text: cleanText(share.text, LIMITS.shareText, d.share.text), link: cleanUrl(share.link, LIMITS.link, true) },
@@ -203,8 +235,24 @@ export function normalizeConfig(input: unknown): BoothConfig {
   };
 }
 
-/** The frames this booth offers. */
-export const offeredFrames = (c: BoothConfig): FrameId[] => (c.frames.allow === "all" ? [...FRAME_IDS] : c.frames.allow);
+/** Every frame, minus those of packs not listed. */
+const framesIn = (packs: string[]): FrameId[] => listFrames().filter((f) => !f.pack || packs.includes(f.pack)).map((f) => f.id);
+
+/** The frames this booth offers, in picker order ("first" ones, then the rest). */
+export function offeredFrames(c: BoothConfig): FrameId[] {
+  const all = c.frames.allow === "all" ? framesIn(c.packs) : c.frames.allow;
+  return [...c.frames.first.filter((id) => all.includes(id)), ...all.filter((id) => !c.frames.first.includes(id))];
+}
+
+/**
+ * Add a text space to a frame (for frames added with registerFrame). The
+ * frame reads it from f.words[id] (undefined: its default; "": off).
+ */
+export function registerWordSlot(slot: { id: string; frame: string; label: string; max: number; placeholder: string; defaultMode: WordMode }) {
+  if (!/^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$/.test(slot.id)) throw new Error(`Text space id "${slot.id}": use frame.name`);
+  if (WORD_SLOTS.some((s) => s.id === slot.id)) return;
+  WORD_SLOTS.push({ id: slot.id, frame: slot.frame, label: slot.label, max: Math.min(200, slot.max), placeholder: slot.placeholder, sponsor: slot.defaultMode });
+}
 
 /** The text spaces, for an editor: id, which frame, label, length limit, what shows when empty, and the default mode. */
 export const listWordSlots = () => WORD_SLOTS.map((s) => ({ id: s.id, frame: s.frame, label: s.label, max: s.max, placeholder: s.placeholder, defaultMode: s.sponsor as WordMode }));

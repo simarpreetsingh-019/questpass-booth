@@ -36,10 +36,30 @@ export interface BoothConfig {
     /** "made with QuestPass" on the frames and the video (please keep it on; see NOTICE) */
     credit: boolean;
     frames: {
-        /** the frames people can pick, or all of them */
+        /** the frames people can pick, or all of them (all built-in frames, plus the frames of the packs below) */
         allow: FrameId[] | "all";
         /** the one it opens with */
         default: FrameId;
+        /** frames shown first in the picker, in this order */
+        first: FrameId[];
+    };
+    /** frame packs to include (["pizza"]: the Pizza DAO frames) */
+    packs: string[];
+    /** the person in the photo */
+    person: {
+        /** show the whole name ("Chorizo Corleone"), not just the first word */
+        wholeName: boolean;
+        /** the name field's label ("Your mafia name") */
+        nameLabel: string;
+        /** the line field's label ("Your line"); the line is the photo's caption */
+        lineLabel: string;
+        /** names to pick from as you type (e.g. the members' mafia names); up to 5,000 */
+        names: string[];
+        /** a 🎲 button makes a name from one word of each list (both needed) */
+        suggest: {
+            first: string[];
+            last: string[];
+        };
     };
     /** the frames' text spaces, by id (see listWordSlots): fixed words, people write, or off */
     words: Record<string, {
@@ -94,8 +114,20 @@ export declare function cleanLogo(v: unknown): string;
 export declare function migrateConfig(input: Obj): Obj;
 /** Any input (JSON from anywhere) → a complete, safe BoothConfig. */
 export declare function normalizeConfig(input: unknown): BoothConfig;
-/** The frames this booth offers. */
-export declare const offeredFrames: (c: BoothConfig) => FrameId[];
+/** The frames this booth offers, in picker order ("first" ones, then the rest). */
+export declare function offeredFrames(c: BoothConfig): FrameId[];
+/**
+ * Add a text space to a frame (for frames added with registerFrame). The
+ * frame reads it from f.words[id] (undefined: its default; "": off).
+ */
+export declare function registerWordSlot(slot: {
+    id: string;
+    frame: string;
+    label: string;
+    max: number;
+    placeholder: string;
+    defaultMode: WordMode;
+}): void;
 /** The text spaces, for an editor: id, which frame, label, length limit, what shows when empty, and the default mode. */
 export declare const listWordSlots: () => {
     id: string;

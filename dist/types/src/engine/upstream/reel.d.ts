@@ -170,6 +170,7 @@ export declare const ROLE_LOOK: Record<string, {
 export declare function roundRect(ctx: CanvasRenderingContext2D, r: Rect, rad: number): void;
 /** Wrap `s` to at most `lines` lines of `maxW` (font already set). */
 export declare function wrap(ctx: CanvasRenderingContext2D, s: string, maxW: number, lines?: number): string[];
+export declare const setWholeNames: (on: boolean) => void;
 export declare const firstName: (n: string) => string;
 /** Whether a photo shows whole (on its blurred self) in a window of this shape. */
 export declare function showsWhole(item: Pick<ReelItem, "fit" | "image">, aspect: number): boolean;
