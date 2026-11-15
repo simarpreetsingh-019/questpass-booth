@@ -30,6 +30,7 @@ const SIZES: Array<[Ratio, string]> = [
   ["16:9", "Wide"],
 ];
 const VIEW_W = 540;
+const ALL = "All";
 
 /** A base64 data URL as a Blob (without fetch, so a strict connect-src doesn't block it). */
 function dataUrlBlob(url: string): Blob {
@@ -70,6 +71,7 @@ export class BoothElement extends HTMLElement {
   private shots: Shot[] = [];
   private samples: ImageBitmap[] = [];
   private frame: FrameId = "polaroid";
+  private group = "";
   private ratio: Ratio = "4:5";
   private palette: PaletteChoice = "brand";
   private caption = "";
@@ -260,8 +262,18 @@ export class BoothElement extends HTMLElement {
     const metas = new Map(listFrames().map((f) => [f.id, f]));
     const frames = offeredFrames(c).map((id) => metas.get(id)).filter((f): f is FrameMeta => Boolean(f));
     // frames
+    // frames by group (Pizza frames, Fun, Clean…), in the order the booth lists them, plus All
+    const groups = [...new Set(frames.map((f) => f.group))];
+    if (this.group !== ALL && !groups.includes(this.group)) this.group = frames.find((f) => f.id === this.frame)?.group ?? groups[0] ?? ALL;
+    const tabs = h("div", { class: "row scroll", role: "tablist", "aria-label": "Frame groups" });
+    for (const g of groups.length > 1 ? [...groups, ALL] : []) {
+      tabs.appendChild(h("button", { class: "small", role: "tab", "aria-selected": String(this.group === g), style: this.group === g ? { borderColor: "var(--qp-accent)", background: "color-mix(in srgb, var(--qp-accent) 18%, transparent)" } : {}, onclick: () => {
+        this.group = g;
+        this.renderPanel();
+      } }, g === ALL ? `All (${frames.length})` : `${g === "Pizza frames" ? "🍕 " : ""}${g} (${frames.filter((f) => f.group === g).length})`));
+    }
     const strip = h("div", { class: "row scroll", role: "group", "aria-label": "Frames" });
-    for (const f of frames) strip.appendChild(this.frameChip(f));
+    for (const f of frames.filter((f) => this.group === ALL || f.group === this.group)) strip.appendChild(this.frameChip(f));
     // colours
     const swatches = h("div", { class: "row scroll", role: "group", "aria-label": "Colours" });
     const sw = (choice: PaletteChoice, color: string, label: string) =>
@@ -294,7 +306,7 @@ export class BoothElement extends HTMLElement {
     const need = this.needed();
     append(this.panel, [
       this.shots.length ? h("div", { class: "card" }, h("h3", null, `Your photos (${this.shots.length})`), thumbs, need ? h("p", { class: "note" }, `This frame shows ${photosFor(this.frame, this.ratio)} photos: ${need} more to go.`) : null) : null,
-      h("div", { class: "card" }, h("h3", null, "Frame"), strip, h("p", { class: "note" }, frameMeta(this.frame).best)),
+      h("div", { class: "card" }, h("h3", null, "Frame"), tabs, strip, h("p", { class: "note" }, frameMeta(this.frame).best)),
       h("div", { class: "card" }, h("h3", null, "Colours"), swatches, h("h3", null, "Size"), sizes),
       h("div", { class: "card" }, h("h3", null, "Words"), fields),
       this.shots.length ? this.actions() : null,

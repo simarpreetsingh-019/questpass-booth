@@ -22,6 +22,7 @@ export declare class BoothElement extends HTMLElement {
     private shots;
     private samples;
     private frame;
+    private group;
     private ratio;
     private palette;
     private caption;

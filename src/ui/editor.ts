@@ -282,8 +282,15 @@ export class EditorElement extends HTMLElement {
     const allowed = (id: string) => c.frames.allow === "all" || (c.frames.allow as string[]).includes(id);
     const packs = [...new Set(listFrames().map((f) => f.pack).filter((p): p is string => Boolean(p)))];
     const packChecks = packs.map((p) => this.check(`${p[0]!.toUpperCase()}${p.slice(1)} frames`, c.packs.includes(p), (c, v) => (c.packs = v ? [...new Set([...c.packs, p])] : c.packs.filter((x) => x !== p)), true));
-    const grid = h("div", { class: "frames-grid" });
-    for (const f of all) {
+    const grid = h("div", { style: { display: "grid", gap: "4px" } });
+    let lastGroup = "";
+    let groupGrid = h("div", { class: "frames-grid" });
+    for (const f of [...all].sort((a, b) => Number(!a.pack) - Number(!b.pack))) {
+      if (f.group !== lastGroup) {
+        lastGroup = f.group;
+        groupGrid = h("div", { class: "frames-grid" });
+        grid.append(h("strong", { style: { marginTop: "8px" } }, f.group), groupGrid);
+      }
       const el = h("input", { type: "checkbox", checked: allowed(f.id) });
       el.addEventListener("change", () =>
         this.update((c) => {
@@ -294,7 +301,7 @@ export class EditorElement extends HTMLElement {
           c.frames.allow = now.size === all.length ? "all" : [...now];
         }, true),
       );
-      grid.appendChild(h("label", { class: "check" }, el, f.label));
+      groupGrid.appendChild(h("label", { class: "check" }, el, f.label));
     }
     const def = h("select", { "aria-label": "The frame it opens with" });
     for (const f of all.filter((f) => allowed(f.id))) def.appendChild(h("option", { value: f.id, selected: f.id === c.frames.default }, f.label));

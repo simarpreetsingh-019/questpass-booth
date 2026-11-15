@@ -2366,6 +2366,7 @@ var LOOKS = {
   player: { best: "Your day as a song", ratio: "9:16", intro: "vinyl", tracks: ["glow", "happy", "sunset"] },
   clean: { best: "Anything: lets the photos talk", ratio: "9:16", intro: "takeoff", tracks: ["drive", "happy", "glow"] }
 };
+var groupLabel = (g) => g === "For devs" ? "Work & tech" : g === "Pizza" ? "Pizza frames" : g;
 var strip = (label) => label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
 var custom = /* @__PURE__ */ new Map();
 var ID = /^[a-z][a-z0-9-]{1,30}$/;
@@ -2384,7 +2385,7 @@ function listFrames() {
     const extra = custom.get(id);
     const look = extra ? { best: extra.best, ratio: extra.ratio, intro: extra.intro ?? "takeoff", tracks: extra.tracks ?? ["happy", "drive", "house"], pack: extra.pack } : LOOKS[id];
     const g = extra?.group ?? FRAMES[id].group;
-    return { id, label: strip(FRAMES[id].label), group: g === "For devs" ? "Work & tech" : g, ...look, photos: photosFor(id, look.ratio) };
+    return { id, label: strip(FRAMES[id].label), group: groupLabel(g), ...look, photos: photosFor(id, look.ratio) };
   });
 }
 var isFrameId = (v) => typeof v === "string" && FRAME_IDS.includes(v);

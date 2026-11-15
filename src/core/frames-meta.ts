@@ -48,6 +48,9 @@ const LOOKS: Record<FrameId, Omit<FrameMeta, "id" | "label" | "group" | "photos"
   clean: { best: "Anything: lets the photos talk", ratio: "9:16", intro: "takeoff", tracks: ["drive", "happy", "glow"] },
 };
 
+/** A group's name in the picker ("Pizza" → "Pizza frames"). */
+const groupLabel = (g: string) => (g === "For devs" ? "Work & tech" : g === "Pizza" ? "Pizza frames" : g);
+
 const strip = (label: string) => label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
 
 /** What a frame added with registerFrame says about itself. */
@@ -96,7 +99,7 @@ export function listFrames(): FrameMeta[] {
     const extra = custom.get(id);
     const look = extra ? { best: extra.best, ratio: extra.ratio, intro: extra.intro ?? "takeoff", tracks: extra.tracks ?? ["happy", "drive", "house"], pack: extra.pack } : LOOKS[id];
     const g = extra?.group ?? FRAMES[id].group;
-    return { id, label: strip(FRAMES[id].label), group: g === "For devs" ? "Work & tech" : g, ...look, photos: photosFor(id, look.ratio) };
+    return { id, label: strip(FRAMES[id].label), group: groupLabel(g), ...look, photos: photosFor(id, look.ratio) };
   });
 }
 
