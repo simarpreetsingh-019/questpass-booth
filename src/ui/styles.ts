@@ -80,9 +80,13 @@ video.result { width: 100%; max-height: 60vh; border-radius: 8px; background: #0
 .slot .modes { display: flex; gap: 6px; flex-wrap: wrap; }
 .credit { text-align: center; font-size: 11px; opacity: .55; }
 .credit a { color: inherit; }
+/* phones: the preview stays in view at the top while you edit */
+.editor .side { position: sticky; top: 0; z-index: 2; background: var(--qp-base); padding-bottom: 8px; }
+.editor .side .stage canvas { max-height: 34vh; }
 @media (min-width: 900px) {
   .editor { max-width: 1100px; grid-template-columns: minmax(0, 1fr) 380px; align-items: start; }
-  .editor .side { position: sticky; top: 16px; }
+  .editor .side { grid-column: 2; grid-row: 1; top: 16px; }
+  .editor .side .stage canvas { max-height: 70vh; }
 }
 @media (prefers-reduced-motion: reduce) { .flash { transition: none; } }
 `;

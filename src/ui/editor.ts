@@ -60,6 +60,7 @@ export class EditorElement extends HTMLElement {
   private json = h("textarea", { readOnly: true, "aria-label": "The booth's settings as JSON", spellcheck: false });
   private statusEl = h("p", { class: "status", role: "status", "aria-live": "polite" });
   private changeTimer = 0;
+  private site = "";
   private seq = 0;
 
   constructor() {
@@ -80,11 +81,15 @@ export class EditorElement extends HTMLElement {
     void this.load();
   }
 
-  attributeChangedCallback() {
-    if (this.isConnected && this.configProp === undefined) void this.load();
+  attributeChangedCallback(_name: string, old: string | null, now: string | null) {
+    // the first values are read by connectedCallback; only later changes reload
+    if (this.loaded && old !== now && this.configProp === undefined) void this.load();
   }
 
+  private loaded = false;
+
   private async load() {
+    this.loaded = true;
     this.cfg = await readConfig(this, this.configProp);
     this.previewFrame = this.cfg.frames.default;
     if (!this.samples.length) this.samples = await samplePhotos().catch(() => []);
@@ -155,6 +160,7 @@ export class EditorElement extends HTMLElement {
       h(
         "div",
         { class: "wrap editor", part: "editor" },
+        h("div", { class: "side", style: { display: "grid", gap: "10px" } }, h("div", { class: "stage" }, this.view), this.previewControls(), this.statusEl),
         h(
           "div",
           { style: { display: "grid", gap: "14px" } },
@@ -165,7 +171,6 @@ export class EditorElement extends HTMLElement {
           this.videoAndSharing(),
           this.output(),
         ),
-        h("div", { class: "side", style: { display: "grid", gap: "10px" } }, h("div", { class: "stage" }, this.view), this.previewControls(), this.statusEl),
       ),
     ]);
     void this.preview();
@@ -185,9 +190,11 @@ export class EditorElement extends HTMLElement {
   private brand() {
     const c = this.cfg;
     const endpoint = this.getAttribute("brand-endpoint");
-    const site = h("input", { type: "text", placeholder: "pizzadao.org", maxLength: 200, autocomplete: "off", inputmode: "url" });
+    const site = h("input", { type: "text", value: this.site, placeholder: "pizzadao.org", maxLength: 200, autocomplete: "off", inputmode: "url" });
+    site.addEventListener("input", () => (this.site = site.value));
     const fetchBtn = h("button", { class: "primary" }, "Fill in from website");
     fetchBtn.addEventListener("click", async () => {
+      this.site = site.value;
       if (!endpoint || !site.value.trim()) return;
       fetchBtn.disabled = true;
       this.status("Looking up the brand…");
@@ -198,8 +205,9 @@ export class EditorElement extends HTMLElement {
         const body = (await r.json().catch(() => ({}))) as { name?: string; website?: string; logo?: string; themeColor?: string; error?: string };
         if (!r.ok) throw new Error(body.error || "Couldn't read that website.");
         let colors = this.cfg.brand.colors;
-        if (body.logo) colors = colorsFromImage(await imageOf(body.logo));
+        if (body.logo) colors = colorsFromImage(await imageOf(body.logo)) ?? colors;
         if (body.themeColor && /^#[0-9A-F]{6}$/i.test(body.themeColor)) colors = { ...colors, accent: body.themeColor.toUpperCase() };
+        const noColour = colors === this.cfg.brand.colors;
         this.update((c) => {
           c.brand.name = body.name ?? c.brand.name;
           c.brand.website = body.website ?? c.brand.website;
@@ -207,7 +215,7 @@ export class EditorElement extends HTMLElement {
           c.brand.colors = colors;
           if (c.title === defaultConfig().title && body.name) c.title = `${body.name} booth`;
         }, true);
-        this.status(body.logo ? "Filled in. Check the logo and colours, and change anything that's off." : "Filled in the name. No logo found: add one below.");
+        this.status(body.logo ? (noColour ? "Filled in. The logo has no colour of its own, so pick the colours below." : "Filled in. Check the logo and colours, and change anything that's off.") : "Filled in the name. No logo found: add one below.");
       } catch (e) {
         this.status(e instanceof Error ? e.message : "Couldn't read that website.", true);
       } finally {
@@ -232,6 +240,7 @@ export class EditorElement extends HTMLElement {
     fromLogo.addEventListener("click", async () => {
       if (!this.cfg.brand.logo) return;
       const colors = colorsFromImage(await imageOf(this.cfg.brand.logo));
+      if (!colors) return this.status("The logo is black and white: pick the colours by hand.");
       this.update((c) => (c.brand.colors = colors), true);
     });
 

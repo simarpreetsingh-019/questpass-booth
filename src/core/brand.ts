@@ -9,7 +9,7 @@ import type { JourneyInput } from "../shims/journey";
 import { applyCanvasTheme, preloadLogoImage } from "../engine/upstream/draw-kit";
 import type { FrameBrand } from "../engine/upstream/frames";
 import type { OpenReel } from "../engine/upstream/reel";
-import { DEFAULT_COLORS, type BoothColors, type BoothConfig } from "./config";
+import { type BoothColors, type BoothConfig } from "./config";
 import { loadBoothFonts } from "./fonts";
 
 export const CREDIT_LINE = "made with QuestPass";
@@ -131,13 +131,14 @@ export async function prepare(c: BoothConfig) {
 /**
  * Colours for a booth from its logo: the logo's strongest colour becomes the
  * accent, the next distinct one the highlight; a dark backdrop with light
- * text (or the reverse for a very dark accent). Runs on the device.
+ * text. Null when the logo has no real colour in it (black and white):
+ * keep the colours you have then. Runs on the device.
  */
-export function colorsFromImage(img: CanvasImageSource): BoothColors {
+export function colorsFromImage(img: CanvasImageSource): BoothColors | null {
   const c = document.createElement("canvas");
   c.width = c.height = 48;
   const g = c.getContext("2d", { willReadFrequently: true });
-  if (!g) return { ...DEFAULT_COLORS };
+  if (!g) return null;
   g.drawImage(img, 0, 0, 48, 48);
   const d = g.getImageData(0, 0, 48, 48).data;
   const bins = Array.from({ length: 12 }, () => ({ w: 0, r: 0, g: 0, b: 0 }));
@@ -160,7 +161,7 @@ export function colorsFromImage(img: CanvasImageSource): BoothColors {
   const hex = (x: { w: number; r: number; g: number; b: number }) =>
     "#" + [x.r, x.g, x.b].map((v) => Math.round(v / x.w).toString(16).padStart(2, "0")).join("").toUpperCase();
   const ranked = bins.map((b, i) => ({ ...b, i })).filter((b) => b.w >= 1).sort((a, b) => b.w - a.w);
-  if (!ranked.length) return { ...DEFAULT_COLORS };
+  if (!ranked.length) return null;
   const first = ranked[0]!;
   // the next colour at least 3 hue steps away (not a shade of the first)
   const second = ranked.find((b) => Math.min(Math.abs(b.i - first.i), 12 - Math.abs(b.i - first.i)) >= 3);

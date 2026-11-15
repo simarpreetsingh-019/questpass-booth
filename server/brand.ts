@@ -96,7 +96,7 @@ export function readPage(html: string, base: URL): PageInfo {
   const size = (s: string | undefined) => Math.max(0, ...(s ?? "").split(/\s+/).map((x) => parseInt(x, 10) || 0));
   const icons = links
     .filter((l) => /(^|\s)(icon|apple-touch-icon|apple-touch-icon-precomposed)(\s|$)/i.test(l.rel ?? "") && l.href && !/\.svg(\?|$)/i.test(l.href) && !/svg/i.test(l.type ?? ""))
-    .map((l) => ({ href: abs(l.href!), score: size(l.sizes) + (/apple-touch-icon/i.test(l.rel!) ? 180 : 0) - (/\.ico(\?|$)/i.test(l.href!) ? 1000 : 0) }))
+    .map((l) => ({ href: abs(l.href!), score: size(l.sizes) + (/apple-touch-icon/i.test(l.rel!) ? 180 : 0) - (/\.ico(\?|$)/i.test(l.href!) ? 64 : 0) }))
     .sort((a, b) => b.score - a.score)
     .map((l) => l.href)
     .filter(Boolean);
@@ -111,6 +111,32 @@ export function sniffImage(b: Buffer): "image/png" | "image/jpeg" | "image/gif" 
   if (b.length > 6 && b.toString("ascii", 0, 4) === "GIF8") return "image/gif";
   if (b.length > 12 && b.toString("ascii", 0, 4) === "RIFF" && b.toString("ascii", 8, 12) === "WEBP") return "image/webp";
   return null;
+}
+
+/**
+ * The biggest PNG inside a .ico file (modern favicons store their large
+ * sizes as PNG), or null. Only PNG entries are taken, so nothing needs
+ * decoding here.
+ */
+export function pngFromIco(b: Buffer): Buffer | null {
+  if (b.length < 6 || b.readUInt16LE(0) !== 0 || b.readUInt16LE(2) !== 1) return null;
+  const n = Math.min(b.readUInt16LE(4), 64);
+  let best: Buffer | null = null;
+  let bestSize = 0;
+  for (let i = 0; i < n; i++) {
+    const at = 6 + i * 16;
+    if (at + 16 > b.length) break;
+    const size = (b[at] || 256) * (b[at + 1] || 256);
+    const len = b.readUInt32LE(at + 8);
+    const off = b.readUInt32LE(at + 12);
+    if (off + len > b.length || len < 8) continue;
+    const data = b.subarray(off, off + len);
+    if (sniffImage(data) === "image/png" && size > bestSize) {
+      best = data;
+      bestSize = size;
+    }
+  }
+  return best;
 }
 
 const hostMatches = (host: string, blocked: string[]) =>
@@ -163,11 +189,14 @@ export async function fetchBrand(input: string, opts: BrandOptions = {}): Promis
   for (const src of [...new Set(candidates)].slice(0, 6)) {
     try {
       const max = opts.maxLogoBytes ?? 1024 * 1024;
-      const img = await safeGet(src, { ...o, maxBytes: max, accept: "image/png,image/webp,image/jpeg,image/gif" });
-      const type = img.status < 400 ? sniffImage(img.body) : null;
-      // too small to be a logo, or cut off at the size limit
-      if (!type || img.body.length < 200 || img.body.length >= max) continue;
-      logo = `data:${type};base64,${img.body.toString("base64")}`;
+      const img = await safeGet(src, { ...o, maxBytes: max, accept: "image/png,image/webp,image/jpeg,image/gif,image/x-icon" });
+      if (img.status >= 400 || img.body.length >= max) continue;
+      // a .ico: its biggest PNG, if it has one
+      const body = sniffImage(img.body) ? img.body : pngFromIco(img.body);
+      const type = body ? sniffImage(body) : null;
+      // too small to be a logo
+      if (!body || !type || body.length < 200) continue;
+      logo = `data:${type};base64,${body.toString("base64")}`;
       break;
     } catch {
       // try the next one

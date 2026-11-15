@@ -111,15 +111,19 @@ export class BoothElement extends HTMLElement {
     window.removeEventListener("pagehide", this.stopCamera);
   }
 
-  attributeChangedCallback() {
-    if (this.isConnected && this.configProp === undefined) void this.load();
+  attributeChangedCallback(_name: string, old: string | null, now: string | null) {
+    // the first values are read by connectedCallback; only later changes reload
+    if (this.loaded && old !== now && this.configProp === undefined) void this.load();
   }
 
   private onHidden = () => {
     if (document.hidden) this.stopCamera();
   };
 
+  private loaded = false;
+
   private async load() {
+    this.loaded = true;
     this.cfg = await readConfig(this, this.configProp);
     applyTheme(this, this.cfg);
     const offered = offeredFrames(this.cfg);

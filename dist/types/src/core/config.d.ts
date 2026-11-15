@@ -1,0 +1,107 @@
+import { type FrameId } from "../engine/upstream/frames";
+export declare const CONFIG_VERSION = 1;
+export type WordMode = "fixed" | "edit" | "off";
+export interface BoothColors {
+    /** buttons, highlights, the frames' main colour */
+    accent: string;
+    /** a second colour: dates, stars */
+    highlight: string;
+    /** backdrop */
+    base: string;
+    /** text on the backdrop */
+    text: string;
+}
+export interface BoothConfig {
+    version: typeof CONFIG_VERSION;
+    /** the booth's title on the frames and the video ("Global Pizza Party") */
+    title: string;
+    /** where ("Mumbai"); empty leaves it off */
+    place: string;
+    /** a date line under the title ("Sat 17 May 2026"); empty leaves it off */
+    dates: string;
+    brand: {
+        /** the brand's name, shown when there's no logo */
+        name: string;
+        /** its website, for the frames that print an address */
+        website: string;
+        /** its logo: a data: image (made by the editor) or an https image URL that allows CORS; empty for none */
+        logo: string;
+        colors: BoothColors;
+    };
+    /** show the brand's logo on the frames and the video's cards */
+    showBrand: boolean;
+    /** "made with QuestPass" on the frames and the video (please keep it on; see NOTICE) */
+    credit: boolean;
+    frames: {
+        /** the frames people can pick, or all of them */
+        allow: FrameId[] | "all";
+        /** the one it opens with */
+        default: FrameId;
+    };
+    /** the frames' text spaces, by id (see listWordSlots): fixed words, people write, or off */
+    words: Record<string, {
+        mode: WordMode;
+        text: string;
+    }>;
+    video: {
+        /** let people make a video from their photos */
+        enabled: boolean;
+        /** a QR code and link on the video's last card (needs share.link) */
+        qr: boolean;
+        /** the brand's logo on the last card */
+        showBrand: boolean;
+    };
+    share: {
+        /** the words that go with a shared photo or video; {link} is replaced by share.link */
+        text: string;
+        /** the booth's own page, for "make yours" and the QR (https only); empty for none */
+        link: string;
+    };
+    camera: {
+        /** the camera turns itself off this many seconds after it's opened (10–120) */
+        idleSeconds: number;
+        /** a 3-second countdown before each shot */
+        timer: boolean;
+    };
+    /** photos kept at once (1–20) */
+    maxPhotos: number;
+}
+export declare const DEFAULT_COLORS: BoothColors;
+export declare function defaultConfig(): BoothConfig;
+/** Limits on lengths, so a config can't blow up the layout or memory. */
+export declare const LIMITS: {
+    readonly title: 40;
+    readonly place: 30;
+    readonly dates: 40;
+    readonly name: 40;
+    readonly website: 200;
+    readonly shareText: 280;
+    readonly link: 300;
+    readonly logoBytes: 1500000;
+};
+type Obj = Record<string, unknown>;
+/** Plain text: control characters removed, trimmed, cut to `max`. */
+export declare const cleanText: (v: unknown, max: number, fallback?: string) => string;
+export declare const isColor: (v: unknown) => v is string;
+/** An http(s) URL with no credentials in it, else "". */
+export declare function cleanUrl(v: unknown, max?: number, httpsOnly?: boolean): string;
+/** A logo: a base64 PNG/JPEG/WebP/GIF data URL (not SVG: it can carry scripts) under the size limit, or an https URL. */
+export declare function cleanLogo(v: unknown): string;
+/** Bring an older config up to this version. */
+export declare function migrateConfig(input: Obj): Obj;
+/** Any input (JSON from anywhere) → a complete, safe BoothConfig. */
+export declare function normalizeConfig(input: unknown): BoothConfig;
+/** The frames this booth offers. */
+export declare const offeredFrames: (c: BoothConfig) => FrameId[];
+/** The text spaces, for an editor: id, which frame, label, length limit, what shows when empty, and the default mode. */
+export declare const listWordSlots: () => {
+    id: string;
+    frame: string;
+    label: string;
+    max: number;
+    placeholder: string;
+    defaultMode: WordMode;
+}[];
+/** The share text with the link filled in. */
+export declare const shareTextOf: (c: BoothConfig) => string;
+export {};

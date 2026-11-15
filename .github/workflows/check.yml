@@ -1,0 +1,16 @@
+name: check
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --ignore-scripts && npm rebuild esbuild
+      - run: npm run check
+      - name: dist/ is up to date
+        run: git diff --exit-code -- dist ':!dist/**/*.map' || (echo "Run npm run build and commit dist/" && exit 1)

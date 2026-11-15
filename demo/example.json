@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "title": "Pizza Party",
+  "place": "Mumbai",
+  "dates": "Sat 22 May 2027",
+  "brand": { "name": "Pizza Party", "website": "", "logo": "", "colors": { "accent": "#FF5A36", "highlight": "#FFC440", "base": "#140A06", "text": "#FFF4E8" } },
+  "frames": { "allow": "all", "default": "polaroid" },
+  "words": { "neon.sign": { "mode": "fixed", "text": "PIZZA TIME" } },
+  "share": { "text": "Made at the Pizza Party booth {link}", "link": "" }
+}

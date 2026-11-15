@@ -18,7 +18,7 @@ import type { IncomingMessage, ServerResponse } from "node:http";
 import { BrandBlockedError, fetchBrand, type BrandKit, type BrandOptions } from "./brand";
 import { BlockedAddressError } from "./net";
 
-export { fetchBrand, readPage, sniffImage, siteUrl, BrandBlockedError, type BrandKit, type BrandOptions } from "./brand";
+export { fetchBrand, readPage, sniffImage, pngFromIco, siteUrl, BrandBlockedError, type BrandKit, type BrandOptions } from "./brand";
 export { isPublicAddress, checkUrl, BlockedAddressError } from "./net";
 
 export interface HandlerOptions extends BrandOptions {

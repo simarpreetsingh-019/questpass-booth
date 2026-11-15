@@ -737,6 +737,8 @@ function deep(ctx: CanvasRenderingContext2D, f: FrameCtx, c: string, k = 0.45) {
 function dayOf(f: FrameCtx): Date {
   const [y, mo, d] = (f.date ?? "").split("-").map(Number);
   if (y && mo && d) return new Date(y, mo - 1, d);
+  // a booth outside the event: today, not a day of the Devcon week
+  if (f.brand) return new Date();
   return new Date(2026, 10, 3 + Math.min(3, Math.floor((f.t / Math.max(1, f.total)) * 4)));
 }
 const WEEKDAYS = ["SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"];

@@ -19,7 +19,7 @@
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/core/index.d.ts",
+      "types": "./dist/types/src/core/index.d.ts",
       "default": "./dist/questpass-booth.js"
     },
     "./server": {
