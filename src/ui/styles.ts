@@ -35,6 +35,8 @@ export const CSS = `
 .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .row.scroll { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 6px; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
 .row.center { justify-content: center; }
+.row.scroll > button { flex: 0 0 auto; white-space: nowrap; }
+[role="tab"] { min-height: 44px; }
 button, .btn { font: inherit; min-height: 44px; padding: 10px 16px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--qp-text) 22%, transparent); background: transparent; color: var(--qp-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .chip:focus-visible { outline: 2px solid var(--qp-accent); outline-offset: 2px; }
