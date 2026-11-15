@@ -25,6 +25,8 @@ If you want to offset all timestamps of a track such that the first one is zero,
   -webkit-tap-highlight-color: transparent;
 }
 * { box-sizing: border-box; }
+/* the hidden attribute wins over display rules (buttons, progress bars) */
+[hidden] { display: none !important; }
 .wrap { max-width: 560px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
 .head { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .head img { height: 32px; max-width: 120px; object-fit: contain; }
