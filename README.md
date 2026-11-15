@@ -6,7 +6,7 @@ A branded photo booth and video maker for any event, that runs on the phone.
 - **Videos with music**: the photos cut to the beat, as an MP4 ready for Instagram, X and WhatsApp. The music is generated on the phone, so there's nothing to license.
 - **Your brand on everything**: logo, colours, title, place and date, and your own words in each frame's text spaces.
 - **Set up in a minute**: type a website and the editor fills in the brand's name, logo and colours. Check them, adjust, done.
-- **Pizza pack**: five frames for pizza parties (a pizza box, a Bitcoin Pizza Day receipt, a Pizza Mafia wanted poster, a whole pizza, a pizzeria table) and a ready Pizza DAO theme, with mafia names.
+- **Pizza pack**: six frames for pizza parties (a pizza box, a Bitcoin Pizza Day receipt, a Pizza Mafia wanted poster, a Rare Pizza NFT card, a whole pizza, a pizzeria table) and a ready Pizza DAO theme, with mafia names.
 - **Private by design**: photos and videos are made on the device and never uploaded. No accounts, no tracking, no third-party requests.
 
 Made by [Simarpreet Singh](https://x.com/simarpreet_019) for [QuestPass](https://questpass.live), the Devcon 8 travel board, and opened up for every event.

@@ -1,5 +1,5 @@
 /**
- * The pizza pack: five frames for pizza parties (made for PizzaDAO's Global
+ * The pizza pack: six frames for pizza parties (made for PizzaDAO's Global
  * Pizza Party, 22 May, Bitcoin Pizza Day). A booth shows them when its
  * config has `packs: ["pizza"]`.
  *
@@ -33,6 +33,7 @@ const MONO_LIGHT: Font = (px) => F.mono(px, 500);
 const SERIF_I: Font = (px) => `italic 600 ${px}px Georgia, "Times New Roman", serif`;
 const HAND: Font = (px) => `700 ${px}px Caveat, "Comic Sans MS", cursive`;
 const CINZEL: Font = (px) => `900 ${px}px Cinzel, Georgia, serif`;
+const SANS: Font = (px) => F.sans(px, 700);
 
 /** A text space's words: undefined → the frame's default, "" → off. */
 const word = (f: FrameCtx, id: string, fallback: string) => {
@@ -703,6 +704,180 @@ const pizzaTable: FrameDef = {
   },
 };
 
+/* ------------------------------------------------- Rare Pizza NFT card */
+
+const RARITIES: Array<{ name: string; color: string; weight: number }> = [
+  { name: "Common", color: "#9CA3AF", weight: 34 },
+  { name: "Uncommon", color: "#34D399", weight: 26 },
+  { name: "Rare", color: "#60A5FA", weight: 18 },
+  { name: "Super Rare", color: "#A78BFA", weight: 11 },
+  { name: "Epic", color: "#F472B6", weight: 7 },
+  { name: "Grail", color: "#FBBF24", weight: 4 },
+];
+const TRAITS: Array<[string, string[]]> = [
+  ["Crust", ["Thin", "Deep dish", "Stuffed", "Neapolitan", "Sourdough", "Pan", "Detroit", "Cauliflower"]],
+  ["Sauce", ["Marinara", "Pesto", "White", "BBQ", "Vodka", "Hot honey", "Arrabbiata", "Garlic"]],
+  ["Cheese", ["Mozzarella", "Burrata", "Gorgonzola", "Four cheese", "Parmesan", "Ricotta", "Vegan", "Smoked"]],
+  ["Topping", ["Pepperoni", "Pineapple", "Mushroom", "Basil", "Jalapeño", "Black olive", "Anchovy", "Truffle", "Hot salami", "Rocket"]],
+];
+
+/** The card's numbers for a name: always the same for the same name (and booth). */
+function nftOf(f: FrameCtx) {
+  const seed = hash(`${nameOf(f).toLowerCase()}|${f.eventName}`);
+  const rnd = seeded(seed);
+  const number = 1 + Math.floor(rnd() * 10000);
+  const typed = word(f, "pizza-nft.rarity", "").trim().toLowerCase();
+  let rarity = RARITIES.find((r) => r.name.toLowerCase() === typed);
+  if (!rarity) {
+    let roll = rnd() * 100;
+    rarity = RARITIES.find((r) => (roll -= r.weight) < 0) ?? RARITIES[0]!;
+  }
+  const traits = TRAITS.map(([k, list]) => [k, list[Math.floor(rnd() * list.length)]!] as const);
+  return { number, rarity, traits };
+}
+
+function nftCard(W: number, H: number, u: number) {
+  if (wide(W, H)) {
+    const h = H - 120 * u;
+    return { x: 80 * u, y: 60 * u, w: W - 160 * u, h };
+  }
+  const t = tallness(W, H);
+  const w = t >= 1.5 ? W - 140 * u : t >= 1.2 ? Math.min(W - 140 * u, (H - 100 * u) * 0.66) : (H - 80 * u) * 0.7;
+  const h = t >= 1.5 ? Math.min(H - 220 * u, w * 1.62) : H - (t >= 1.2 ? 100 : 80) * u;
+  return { x: (W - w) / 2, y: (H - h) / 2 + (t >= 1.5 ? 30 * u : 0), w, h };
+}
+
+function stars(ctx: Ctx, f: FrameCtx) {
+  const { W, H, u, pal } = f;
+  ctx.fillStyle = pal.bg;
+  ctx.fillRect(0, 0, W, H);
+  const g = ctx.createRadialGradient(W / 2, H * 0.3, 0, W / 2, H * 0.3, Math.max(W, H) * 0.7);
+  g.addColorStop(0, withA(pal.accent2, 0.18));
+  g.addColorStop(1, withA(pal.bg, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, W, H);
+  const rnd = seeded(77);
+  for (let i = 0; i < 90; i++) {
+    ctx.fillStyle = withA("#FFFFFF", 0.25 + rnd() * 0.6);
+    const r = (0.8 + rnd() * 2.2) * u;
+    ctx.beginPath();
+    ctx.arc(rnd() * W, rnd() * H, r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  // a few twinkles
+  ctx.strokeStyle = withA(pal.accent, 0.8);
+  ctx.lineWidth = 3 * u;
+  for (let i = 0; i < 6; i++) {
+    const x = rnd() * W;
+    const y = rnd() * H;
+    const r = (8 + rnd() * 10) * u;
+    ctx.beginPath();
+    ctx.moveTo(x - r, y);
+    ctx.lineTo(x + r, y);
+    ctx.moveTo(x, y - r);
+    ctx.lineTo(x, y + r);
+    ctx.stroke();
+  }
+}
+
+const pizzaNft: FrameDef = {
+  label: "🃏 Rare Pizza card",
+  group: GROUP,
+  palettes: () => [
+    P("Night sky", "#070B1A", "#FEFDFA", "#9AA4BF", "#121A33", "#FEFDFA", "#FFD23D", "#7B5CFF"),
+    P("Pizza red", "#3A0A08", "#FEFDFA", "#E8B4AE", "#1C0D0B", "#FEFDFA", "#FFD23D", "#FF393A"),
+    P("Grail gold", "#141008", "#FFF6DC", "#C9B98A", "#211A0C", "#FFF6DC", "#FBBF24", "#FF8A28"),
+  ],
+  window(W, H, u) {
+    const c = nftCard(W, H, u);
+    if (wide(W, H)) {
+      const s = c.h - 80 * u;
+      return { x: c.x + 40 * u, y: c.y + 40 * u, w: s, h: s };
+    }
+    const w = c.w - 60 * u;
+    return { x: c.x + 30 * u, y: c.y + c.h * 0.075, w, h: Math.min(w, c.h * 0.52) };
+  },
+  ownsText: true,
+  marks: [],
+  back(ctx, f) {
+    const { W, H, u, R, pal } = f;
+    stars(ctx, f);
+    const c = nftCard(W, H, u);
+    const { rarity } = nftOf(f);
+    // the card, edged in its rarity's colour
+    ctx.save();
+    ctx.shadowColor = withA(rarity.color, 0.55);
+    ctx.shadowBlur = 50 * u;
+    ctx.fillStyle = pal.paper;
+    roundRect(ctx, c, 28 * u);
+    ctx.fill();
+    ctx.restore();
+    ctx.strokeStyle = rarity.color;
+    ctx.lineWidth = 5 * u;
+    roundRect(ctx, { x: c.x + 2.5 * u, y: c.y + 2.5 * u, w: c.w - 5 * u, h: c.h - 5 * u }, 26 * u);
+    ctx.stroke();
+    // a board under the photo (a pizza on a peel)
+    ctx.fillStyle = "#6B4226";
+    roundRect(ctx, { x: R.x - 8 * u, y: R.y - 8 * u, w: R.w + 16 * u, h: R.h + 16 * u }, 14 * u);
+    ctx.fill();
+    // header: collection and edition
+    const top = wide(W, H) ? { x: R.x + R.w + 50 * u, y: c.y + 40 * u, w: c.x + c.w - (R.x + R.w) - 90 * u } : { x: c.x + 30 * u, y: c.y + 14 * u, w: c.w - 60 * u };
+    const hy = wide(W, H) ? top.y + 26 * u : (c.y + R.y) / 2 + 2 * u;
+    const hp = wide(W, H) ? 28 * u : Math.min(28 * u, (R.y - c.y) * 0.42);
+    say(ctx, word(f, "pizza-nft.collection", "RARE PIZZA").toUpperCase(), top.x, hy, top.w * 0.6, hp, MONO, pal.accent, "left");
+    text(ctx, "1 OF 1", top.x + top.w, hy, MONO(hp * 0.85), withA(pal.ink, 0.6), "right");
+  },
+  front(ctx, f) {
+    const { W, H, u, R, pal } = f;
+    const c = nftCard(W, H, u);
+    const { number, rarity, traits } = nftOf(f);
+    const box = wide(W, H) ? { x: R.x + R.w + 50 * u, y: c.y + 90 * u, w: c.x + c.w - (R.x + R.w) - 90 * u, h: c.h - 130 * u } : { x: c.x + 30 * u, y: R.y + R.h + 22 * u, w: c.w - 60 * u, h: c.y + c.h - (R.y + R.h) - 44 * u };
+    // rows, in units of the box's height
+    const units = 8.6;
+    const k = box.h / units;
+    const px = Math.min(30 * u, k * 0.5);
+    let y = box.y;
+    // name and number
+    const title = `${nameOf(f) || "Unnamed Pizza"} #${number}`;
+    say(ctx, title, box.x, y + k * 0.62, box.w, Math.min(64 * u, k * 1.05), BEBAS, pal.ink, "left");
+    y += k * 1.35;
+    // rarity badge
+    ctx.font = MONO(px * 0.95);
+    const bw = ctx.measureText(rarity.name.toUpperCase()).width + px * 1.6;
+    ctx.fillStyle = withA(rarity.color, 0.18);
+    roundRect(ctx, { x: box.x, y: y, w: bw, h: k * 0.85 }, k * 0.42);
+    ctx.fill();
+    ctx.strokeStyle = rarity.color;
+    ctx.lineWidth = 2.5 * u;
+    ctx.stroke();
+    text(ctx, rarity.name.toUpperCase(), box.x + bw / 2, y + k * 0.44, MONO(px * 0.95), rarity.color);
+    if (lineOf(f)) say(ctx, `“${lineOf(f)}”`, box.x + bw + px, y + k * 0.44, box.w - bw - px, px * 1.05, SERIF_I, withA(pal.ink, 0.85), "left");
+    y += k * 1.25;
+    // traits, two by two, like an NFT's properties
+    const cw = (box.w - 14 * u) / 2;
+    traits.forEach(([key, value], i) => {
+      const x = box.x + (i % 2) * (cw + 14 * u);
+      const ty = y + Math.floor(i / 2) * k * 1.55;
+      ctx.fillStyle = withA(pal.accent2, 0.16);
+      roundRect(ctx, { x, y: ty, w: cw, h: k * 1.35 }, 12 * u);
+      ctx.fill();
+      text(ctx, key.toUpperCase(), x + cw / 2, ty + k * 0.38, MONO(px * 0.7), withA(pal.ink, 0.6));
+      say(ctx, value, x + cw / 2, ty + k * 0.92, cw - 16 * u, px * 1.05, SANS, pal.ink);
+    });
+    y += k * 3.2;
+    // minted at, and the brand
+    const minted = ["MINTED AT", f.eventName, placeDate(f)].filter(Boolean).join(" · ").toUpperCase();
+    say(ctx, minted, box.x, y + k * 0.45, box.w * (f.brand?.sponsor ? 0.68 : 1), px * 0.72, MONO, withA(pal.ink, 0.7), "left");
+    if (f.brand?.sponsor) {
+      const probe = document.createElement("canvas").getContext("2d");
+      const lh = Math.min(40 * u, k * 0.8);
+      const lw = probe ? drawSponsorLogo(probe, f.sponsor, 0, 0, lh) : 0;
+      if (lw > 0) sponsorLogo(ctx, f.sponsor, box.x + box.w - lw, y + k * 0.45 - lh / 2, lh);
+    }
+    credit(ctx, f, withA(pal.fg, 0.5));
+  },
+};
+
 /* ------------------------------------------------------------- the pack */
 
 const SLOTS: Array<{ id: string; frame: string; label: string; max: number; placeholder: string; defaultMode: WordMode }> = [
@@ -719,6 +894,8 @@ const SLOTS: Array<{ id: string; frame: string; label: string; max: number; plac
   { id: "pizza-mafia.reward", frame: "pizza-mafia", label: "Reward", max: 32, placeholder: "REWARD: ONE LARGE PEPPERONI", defaultMode: "edit" },
   { id: "pizza-mafia.stamp", frame: "pizza-mafia", label: "Stamp", max: 14, placeholder: "PIZZA MAFIA", defaultMode: "fixed" },
   { id: "pizza-table.special", frame: "pizza-table", label: "Chalkboard heading", max: 24, placeholder: "TODAY'S SPECIAL", defaultMode: "fixed" },
+  { id: "pizza-nft.collection", frame: "pizza-nft", label: "Collection name", max: 20, placeholder: "RARE PIZZA", defaultMode: "fixed" },
+  { id: "pizza-nft.rarity", frame: "pizza-nft", label: "Rarity (Common … Grail; empty: picked from the name)", max: 10, placeholder: "picked from the name", defaultMode: "fixed" },
 ];
 
 let done = false;
@@ -732,6 +909,7 @@ export function registerPizzaPack() {
   registerFrame("pizza-receipt", pizzaReceipt, { ...meta, best: "Bitcoin Pizza Day, the origin story", ratio: "9:16", intro: "chime" });
   registerFrame("pizza-mafia", pizzaMafia, { ...meta, best: "Your mafia name, solo shots", ratio: "4:5", intro: "projector", tracks: ["trap", "drill", "dhol"] });
   registerFrame("pizza-whole", pizzaWhole, { ...meta, best: "Faces up close, food shots", ratio: "9:16", intro: "vinyl" });
+  registerFrame("pizza-nft", pizzaNft, { ...meta, best: "Your own 1-of-1 Rare Pizza", ratio: "9:16", intro: "projector", tracks: ["trap", "synth", "happy"] });
   registerFrame("pizza-table", pizzaTable, { ...meta, best: "Friends at the table", ratio: "9:16", intro: "vinyl", tracks: ["chai", "sunset", "happy"] });
   for (const s of SLOTS) registerWordSlot(s);
 }
