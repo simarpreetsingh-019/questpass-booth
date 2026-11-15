@@ -4,20 +4,32 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta name="robots" content="noindex" />
-  <title>Booth setup</title>
+  <title>Set up your booth</title>
   <link rel="stylesheet" href="demo.css" />
   <script type="module" src="dist/questpass-booth.js"></script>
   <script type="module" src="demo.js"></script>
 </head>
 <body>
   <header>
-    <h1>Booth setup (organisers)</h1>
-    <p>Set the look here, then save the settings file and publish it (see docs/pizzadao.md). Nothing here changes a live booth by itself.</p>
+    <h1>Set up your booth</h1>
+    <p>Design your booth here, save the settings file, and upload it to your copy of the repository. This page only makes a file on your device: it can't change anyone's booth.</p>
+    <p class="start">Start from: <a href="?start=pizzadao">the Pizza DAO theme</a> · <a href="?start=blank">a blank booth</a> · or load your saved file (Settings file → Load a file).</p>
     <nav><button data-tab="editor" aria-pressed="true">Settings</button><button data-tab="booth" aria-pressed="false">Try the booth</button></nav>
   </header>
   <main>
-    <section id="editor"><questpass-booth-editor config-src="pizzadao.json"></questpass-booth-editor></section>
-    <section id="booth" hidden><questpass-booth config-src="pizzadao.json"></questpass-booth></section>
+    <section id="editor"><questpass-booth-editor></questpass-booth-editor></section>
+    <section id="booth" hidden><questpass-booth></questpass-booth></section>
+    <details class="howto" open>
+      <summary>When it looks right: publish it</summary>
+      <ol>
+        <li>Tap <b>⬇ Save settings file</b> above. You get <code>booth-base.json</code>.</li>
+        <li><a href="https://github.com/simarpreetsingh-019/questpass-booth/fork" target="_blank" rel="noopener">Fork the repository</a> on GitHub, if you haven't (your copy is yours to run).</li>
+        <li>In your fork: <b>Add file → Upload files</b>, drop <code>booth-base.json</code> at the top, and commit.</li>
+        <li>Settings → Pages → Source: <b>GitHub Actions</b>. For one booth per city, connect a spreadsheet too.</li>
+        <li>Actions → <b>pages</b> → Run workflow. Your booths go live with just the booth on them: your guests never see this page.</li>
+      </ol>
+      <p>Step-by-step guide: <a href="https://github.com/simarpreetsingh-019/questpass-booth/blob/main/docs/pizzadao.md" target="_blank" rel="noopener">docs/pizzadao.md</a>.</p>
+    </details>
     <pre id="log" aria-live="polite" hidden></pre>
   </main>
 </body>

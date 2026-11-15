@@ -1,6 +1,18 @@
 // The demo page: switch tabs, give the editor's settings to the booth, and log the booth's events.
 const booth = document.querySelector("questpass-booth");
 const editor = document.querySelector("questpass-booth-editor");
+// where to start: the Pizza DAO theme (default) or a blank booth (?start=blank)
+const start = new URLSearchParams(location.search).get("start") === "blank" ? null : "pizzadao.json";
+if (start) {
+  fetch(start).then((r) => r.json()).then((c) => {
+    editor.config = c;
+    booth.config = c;
+  });
+} else {
+  editor.config = {};
+  booth.config = {};
+}
+
 // the lookups need the demo's own server (npm run demo); a static copy (GitHub Pages) has none
 if (location.port === "8787") {
   booth.setAttribute("avatar-endpoint", "/api/avatar");
@@ -24,9 +36,9 @@ const log = document.getElementById("log");
 log.hidden = !new URLSearchParams(location.search).has("debug");
 const say = (s) => (log.textContent = `${new Date().toLocaleTimeString()}  ${s}\n${log.textContent}`.slice(0, 2000));
 
-for (const b of document.querySelectorAll("nav button")) {
+for (const b of document.querySelectorAll("nav button[data-tab]")) {
   b.addEventListener("click", () => {
-    for (const x of document.querySelectorAll("nav button")) x.setAttribute("aria-pressed", String(x === b));
+    for (const x of document.querySelectorAll("nav button[data-tab]")) x.setAttribute("aria-pressed", String(x === b));
     for (const s of document.querySelectorAll("main section")) s.hidden = s.id !== b.dataset.tab;
   });
 }

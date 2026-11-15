@@ -410,7 +410,7 @@ export class EditorElement extends HTMLElement {
         "div",
         { class: "row" },
         copy,
-        h("button", { class: "small", onclick: () => download(new Blob([this.json.value], { type: "application/json" }), `${slug(this.cfg.brand.name || this.cfg.title)}-booth.json`) }, "Download"),
+        h("button", { class: "small", onclick: () => download(new Blob([this.json.value], { type: "application/json" }), "booth-base.json") }, "Download"),
         h("label", { class: "btn small" }, "Load a file", load),
         h("button", { class: "small", onclick: () => { this.cfg = defaultConfig(); this.build(); emit(this, "change", { config: this.config }); } }, "Start over"),
       ),

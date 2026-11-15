@@ -25,7 +25,7 @@ This guide is for Pizza DAO organisers. It covers everything from the first setu
 | **Can change** | Their own photo, on their own phone. Nothing on the site. | The look of every booth (the settings file), each city's details (the spreadsheet), the frames. |
 | **Need** | A phone and the link or QR code. | Edit access to the spreadsheet, or write access to the GitHub repository. |
 
-The public site has **no setup page**. Organisers set booths up on their own computer (`npm run setup`) or through the spreadsheet. Changes only go live through the repository and the sheet, so access to those is the admin access. Anyone else running the open-source code only gets their own copy, never yours.
+The public site has **no setup page**. Organisers design the look on the setup page (hosted by QuestPass, or `npm run setup` on their computer), save it as a file in their repository, and run cities through the spreadsheet. Changes only go live through the repository and the sheet, so access to those is the admin access. Anyone else running the open-source code only gets their own copy, never yours.
 
 ## 2. One-time setup (about 15 minutes)
 
@@ -48,13 +48,18 @@ Because `SHEET_URL` is set, the public site contains **only the booths**. Two op
 
 The look shared by every booth is one settings file, `booth-base.json`, in the repository.
 
-1. On a computer with Node.js 18+:
-   ```bash
-   git clone https://github.com/pizzadao/booths && cd booths
-   npm install && npm run build && npm run setup
-   ```
-2. Open **http://localhost:8787/setup.html**. On the Settings tab:
-   - **Brand:** type `pizzadao.org` and tap **Fill in from website**, or **Upload logo** (a PNG works best). Check the colours, or tap **Colours from logo**.
+1. Open the setup page, either way:
+   - **Nothing to install:** **https://simarpreetsingh-019.github.io/questpass-booth/setup.html**. It runs in your browser and only makes a file on your device; it can't change anyone's booths.
+   - **On your computer** (Node.js 18+; this also lets "Fill in from website" read a brand's site):
+     ```bash
+     git clone https://github.com/pizzadao/booths && cd booths
+     npm install && npm run build && npm run setup
+     ```
+     then open **http://localhost:8787/setup.html**.
+
+   To edit your current look later, open the setup page and load your `booth-base.json` (Settings file → Load a file).
+2. On the Settings tab:
+   - **Brand:** **Upload logo** (a PNG works best), or on your computer type `pizzadao.org` and tap **Fill in from website**. Check the colours, or tap **Colours from logo**.
    - **The booth:** the title, place and date line. The sheet can override these per city.
    - **Frames:** **Pizza frames** is on. Choose which frames people can pick and which one it opens with.
    - **Text on the frames:** for every text space (the neon sign, the receipt's items, the wanted poster's crime, the card's collection name…), choose **Fixed** (your words), **People write** (guests can change them) or **Off**.

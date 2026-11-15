@@ -14,3 +14,7 @@ main { padding: 0 16px 32px; max-width: 1100px; margin: 0 auto; display: grid; g
 .gallery figcaption { font-size: 12px; opacity: .75; }
 body.booth-only { background: #0b0b10; }
 body.booth-only questpass-booth { border-radius: 0; min-height: 100vh; }
+.start { font-size: 14px; } .start a, .howto a { color: #FFD23D; }
+.howto { border: 1px solid #333; border-radius: 12px; padding: 12px 16px; }
+.howto summary { font-weight: 700; cursor: pointer; min-height: 32px; }
+.howto li { margin: 6px 0; } .howto code { background: #222; padding: 1px 5px; border-radius: 4px; }

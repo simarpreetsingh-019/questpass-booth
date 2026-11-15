@@ -11,6 +11,14 @@ A branded photo booth and video maker for any event, that runs on the phone.
 
 Made by [Simarpreet Singh](https://x.com/simarpreet_019) for [QuestPass](https://questpass.live), the Devcon 8 travel board, and opened up for every event.
 
+## Set up your own booth
+
+1. Design it at **[the setup page](https://simarpreetsingh-019.github.io/questpass-booth/setup.html)**: logo, colours, frames, words. Nothing to install, and it only makes a file on your device.
+2. Tap **Save settings file**, [fork this repository](https://github.com/simarpreetsingh-019/questpass-booth/fork), and upload `booth-base.json` to your fork.
+3. Turn on GitHub Pages in your fork (Settings → Pages → GitHub Actions) and run the **pages** workflow.
+
+Your booth goes live on your own site, with only the booth on it: your guests never see the setup page. Whoever owns the fork is its admin. Step by step, with a booth per city from a spreadsheet: [docs/pizzadao.md](docs/pizzadao.md).
+
 ## Add it to a page
 
 ```html
