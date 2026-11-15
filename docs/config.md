@@ -43,6 +43,8 @@ A booth is one JSON object. Every field is optional. `normalizeConfig()` fills i
 | `person.wholeName` | true | Show the whole name ("Chorizo Corleone"), not just the first word. |
 | `person.nameLabel`, `person.lineLabel` | "Your name", "Caption" | The two fields' labels ("Your mafia name", "Your line"). The line is printed under the photo. |
 | `person.names` | [] | Names offered as people type (up to 5,000), e.g. members' mafia names. Anyone who opens the booth can see them. |
+| `person.handle` | off | `{ "ask": true, "label": "Your username", "networks": ["telegram", "x", "instagram"] }`: asks for a username, shown as @username with their picture in a tag on every frame. |
+| `person.picture` | false | Lets people add a picture: upload one (a profile picture, an NFT), or fetch their public Telegram or X picture (needs the booth's `avatar-endpoint`). |
 | `person.suggest` | empty | `{ "first": [...], "last": [...] }`: a 🎲 button makes a name from one word of each. |
 | `words` | {} | Per text space: `mode` is `fixed` (your words), `edit` (people type their own, starting from your text) or `off`. Ids come from `listWordSlots()`. |
 | `video.enabled` | true | Show the video maker. |

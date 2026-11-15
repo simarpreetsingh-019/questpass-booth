@@ -50,3 +50,11 @@ test("pictures are told apart by their bytes, and a PNG is found inside an .ico"
   assert.deepEqual(pngFromIco(ico), png);
   assert.equal(pngFromIco(Buffer.from("not an icon")), null);
 });
+
+test("the picture lookup refuses odd usernames and unknown networks without fetching", async () => {
+  const { fetchAvatar } = await import("../server/avatar");
+  await assert.rejects(fetchAvatar("telegram", "../../etc"), /isn't a username/);
+  await assert.rejects(fetchAvatar("telegram", "a b"), /isn't a username/);
+  await assert.rejects(fetchAvatar("x", "someone"), /aren't switched on/);
+  await assert.rejects(fetchAvatar("instagram", "someone"), /Telegram and X/);
+});

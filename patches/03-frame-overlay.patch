@@ -1,0 +1,31 @@
+--- a/src/engine/upstream/reel.ts	2026-11-15 22:52:13
++++ b/src/engine/upstream/reel.ts	2026-11-15 22:52:13
+@@ -937,6 +937,7 @@
+       badge(ctx, t);
+       ctx.restore();
+       frame.front?.(ctx, fc);
++      overlay?.(ctx, fc);
+       const end = clamp((t - (content.total - 0.3)) / 0.3);
+       if (end > 0) {
+         ctx.fillStyle = `rgba(0,0,0,${end})`;
+@@ -946,6 +947,12 @@
+     },
+   };
+ }
++
++/** Drawn over every frame, after its front (a booth's name tag); null for none. */
++let overlay: ((ctx: CanvasRenderingContext2D, f: FrameCtx) => void) | null = null;
++export const setFrameOverlay = (fn: typeof overlay) => {
++  overlay = fn;
++};
+ 
+ /** The name slide (frame 0) as an image: the cover for platforms that let you pick one. */
+ export async function renderCover(input: ReelInput): Promise<Blob> {
+@@ -1006,6 +1013,7 @@
+   }
+   ctx.restore();
+   frame.front?.(ctx, fc);
++  overlay?.(ctx, fc);
+   ctx.restore();
+ }
+ 

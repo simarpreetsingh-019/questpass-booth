@@ -9,6 +9,7 @@
 import { WORD_SLOTS } from "../engine/upstream/frame-words";
 import { FRAME_IDS, type FrameId } from "../engine/upstream/frames";
 import { isFrameId, listFrames } from "./frames-meta";
+import { isNetwork, type Network } from "./handle";
 
 export const CONFIG_VERSION = 1;
 
@@ -71,6 +72,10 @@ export interface BoothConfig {
     names: string[];
     /** a 🎲 button makes a name from one word of each list (both needed) */
     suggest: { first: string[]; last: string[] };
+    /** ask for a username, shown with their picture in a tag on every frame */
+    handle: { ask: boolean; label: string; networks: Network[] };
+    /** let people add a picture: upload one, or (with the server's lookup) their Telegram or X profile picture */
+    picture: boolean;
   };
   /** the frames' text spaces, by id (see listWordSlots): fixed words, people write, or off */
   words: Record<string, { mode: WordMode; text: string }>;
@@ -111,7 +116,7 @@ export function defaultConfig(): BoothConfig {
     credit: true,
     frames: { allow: "all", default: "polaroid", first: [] },
     packs: [],
-    person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] } },
+    person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] }, handle: { ask: false, label: "Your username", networks: ["telegram", "x", "instagram"] }, picture: false },
     words: {},
     video: { enabled: true, qr: true, showBrand: true },
     share: { text: "Made at the photo booth {link}", link: "" },
@@ -197,6 +202,7 @@ export function normalizeConfig(input: unknown): BoothConfig {
 
   const person = isObj(c.person) ? c.person : {};
   const suggest = isObj(person.suggest) ? person.suggest : {};
+  const handle = isObj(person.handle) ? person.handle : {};
   const list = (v: unknown, max: number, each: number) => (Array.isArray(v) ? [...new Set(v.map((x) => cleanText(x, each)).filter(Boolean))].slice(0, max) : []);
 
   return {
@@ -226,6 +232,12 @@ export function normalizeConfig(input: unknown): BoothConfig {
       lineLabel: cleanText(person.lineLabel, 30, d.person.lineLabel),
       names: list(person.names, 5000, 40),
       suggest: { first: list(suggest.first, 500, 20), last: list(suggest.last, 500, 20) },
+      handle: {
+        ask: bool(handle.ask, d.person.handle.ask),
+        label: cleanText(handle.label, 30, d.person.handle.label),
+        networks: Array.isArray(handle.networks) && handle.networks.filter(isNetwork).length ? [...new Set(handle.networks.filter(isNetwork))] : d.person.handle.networks,
+      },
+      picture: bool(person.picture, d.person.picture),
     },
     words,
     video: { enabled: bool(video.enabled, d.video.enabled), qr: bool(video.qr, d.video.qr), showBrand: bool(video.showBrand, d.video.showBrand) },

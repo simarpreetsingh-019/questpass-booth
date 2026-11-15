@@ -25,6 +25,7 @@ Please report security issues privately, via GitHub's "Report a vulnerability" o
   - every address checked at the moment of connecting, so a name that points at a private, loopback, link-local or cloud-metadata address is refused, even if it changes between lookups;
   - at most 3 redirects, each checked the same way.
 - **Limits:** 6-second timeout, the first 512 KB of a page, 100 KB manifests, 1 MB logos, no cookies sent.
+- **The picture lookup** takes only a username (letters, digits, `_`), fetches only Telegram's or fxtwitter's pages, and accepts pictures only from their image hosts (`telesco.pe`, `pbs.twimg.com`), through the same safe fetching.
 - **Pictures are identified by their bytes**, never by the server's word. Only PNG, JPEG, WebP and GIF pass; a PNG inside an `.ico` is extracted.
 - **Abuse limits:** 30 lookups per caller per hour by default, cross-origin browser calls only from `allowOrigins`, and a `blocked` list for brands that opt out.
 

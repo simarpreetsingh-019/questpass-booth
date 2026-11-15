@@ -73,3 +73,17 @@ test("packs, frame order and the person settings", async () => {
   assert.equal(pizza.person.nameLabel, "Your mafia name");
   assert.equal(pizza.person.wholeName, true);
 });
+
+test("usernames are cleaned from whatever is pasted", async () => {
+  const { cleanHandle } = await import("../src/core/handle");
+  assert.equal(cleanHandle("@durov"), "durov");
+  assert.equal(cleanHandle("https://t.me/durov"), "durov");
+  assert.equal(cleanHandle("telegram.me/durov?x=1"), "durov");
+  assert.equal(cleanHandle("https://x.com/simarpreet_019?s=20"), "simarpreet_019");
+  assert.equal(cleanHandle("instagram.com/pizza.dao/"), "pizza.dao");
+  assert.equal(cleanHandle("<script>alert(1)</script>"), "scriptalert1script");
+  assert.equal(cleanHandle(42), "");
+  const c = normalizeConfig({ person: { handle: { ask: true, networks: ["telegram", "myspace"] }, picture: true } });
+  assert.deepEqual(c.person.handle.networks, ["telegram"]);
+  assert.equal(c.person.picture, true);
+});

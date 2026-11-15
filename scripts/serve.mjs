@@ -4,16 +4,19 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { nodeBrandHandler } from "../dist/server.js";
+import { nodeAvatarHandler, nodeBrandHandler } from "../dist/server.js";
 
 const root = join(fileURLToPath(import.meta.url), "../..");
 const port = Number(process.env.PORT ?? 8787);
 const TYPES = { ".html": "text/html; charset=utf-8", ".js": "text/javascript", ".map": "application/json", ".json": "application/json", ".woff2": "font/woff2", ".md": "text/plain; charset=utf-8", ".css": "text/css" };
 const brand = nodeBrandHandler();
+// X pictures come through an unofficial service: on here for testing (see server/avatar.ts)
+const avatar = nodeAvatarHandler({ x: true });
 
 createServer(async (req, res) => {
   const path = decodeURIComponent(new URL(req.url ?? "/", "http://x").pathname);
   if (path === "/api/brand") return brand(req, res);
+  if (path === "/api/avatar") return avatar(req, res);
   const page = path.endsWith("/") ? `${path}index.html` : path;
   const rel = page.startsWith("/dist/") ? page.slice(1) : join("demo", page);
   const file = normalize(join(root, rel));

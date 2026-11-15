@@ -196,6 +196,16 @@
         "Russo",
         "Ricci"
       ]
-    }
+    },
+    "handle": {
+      "ask": true,
+      "label": "Your username",
+      "networks": [
+        "telegram",
+        "x",
+        "instagram"
+      ]
+    },
+    "picture": true
   }
 }

@@ -14,7 +14,7 @@
 import type { SponsorBrand } from "../../shims/sponsors";
 import { type JourneyInput } from "../../shims/journey";
 import { type IntroSound, type Track } from "./music";
-import { type FrameBrand, type FrameId, type Palette, type Rect } from "./frames";
+import { type FrameBrand, type FrameCtx, type FrameId, type Palette, type Rect } from "./frames";
 export type Ratio = "9:16" | "4:5" | "1:1" | "16:9";
 export declare const RATIOS: Record<Ratio, [number, number]>;
 export declare const INTRO_SEC = 6;
@@ -211,6 +211,9 @@ export declare function reelWindow(opts: Pick<ReelInput, "ratio" | "frame">): Re
 export declare function buildReel(input: ReelInput): Promise<Composer>;
 /** Wrap a content layer (made at reelWindow's size) in its frame. */
 export declare function composeReel(content: ContentRenderer, opts: FrameOpts): Composer;
+/** Drawn over every frame, after its front (a booth's name tag); null for none. */
+declare let overlay: ((ctx: CanvasRenderingContext2D, f: FrameCtx) => void) | null;
+export declare const setFrameOverlay: (fn: typeof overlay) => void;
 /** The name slide (frame 0) as an image: the cover for platforms that let you pick one. */
 export declare function renderCover(input: ReelInput): Promise<Blob>;
 /**

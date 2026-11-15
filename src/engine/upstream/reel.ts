@@ -937,6 +937,7 @@ export function composeReel(content: ContentRenderer, opts: FrameOpts): Composer
       badge(ctx, t);
       ctx.restore();
       frame.front?.(ctx, fc);
+      overlay?.(ctx, fc);
       const end = clamp((t - (content.total - 0.3)) / 0.3);
       if (end > 0) {
         ctx.fillStyle = `rgba(0,0,0,${end})`;
@@ -946,6 +947,12 @@ export function composeReel(content: ContentRenderer, opts: FrameOpts): Composer
     },
   };
 }
+
+/** Drawn over every frame, after its front (a booth's name tag); null for none. */
+let overlay: ((ctx: CanvasRenderingContext2D, f: FrameCtx) => void) | null = null;
+export const setFrameOverlay = (fn: typeof overlay) => {
+  overlay = fn;
+};
 
 /** The name slide (frame 0) as an image: the cover for platforms that let you pick one. */
 export async function renderCover(input: ReelInput): Promise<Blob> {
@@ -1006,6 +1013,7 @@ export function previewFrame(canvas: HTMLCanvasElement, width: number, opts: Fra
   }
   ctx.restore();
   frame.front?.(ctx, fc);
+  overlay?.(ctx, fc);
   ctx.restore();
 }
 

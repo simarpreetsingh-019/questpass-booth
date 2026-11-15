@@ -21,6 +21,7 @@ import { CREDIT_LINE } from "../core/brand";
 import { VERSION } from "../core/version";
 import { append, applyTheme, clear, download, emit, h, readConfig, shareFile, slug } from "./dom";
 import { adoptStyles } from "./styles";
+import { NETWORKS, cleanHandle, type Network } from "../core/handle";
 
 const SIZES: Array<[Ratio, string]> = [
   ["9:16", "Story"],
@@ -29,6 +30,15 @@ const SIZES: Array<[Ratio, string]> = [
   ["16:9", "Wide"],
 ];
 const VIEW_W = 540;
+
+/** A base64 data URL as a Blob (without fetch, so a strict connect-src doesn't block it). */
+function dataUrlBlob(url: string): Blob {
+  const [head, b64 = ""] = url.split(",", 2);
+  const bin = atob(b64);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type: /^data:([^;]+)/.exec(head ?? "")?.[1] ?? "image/jpeg" });
+}
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 interface Shot {
@@ -51,7 +61,7 @@ const queue = (job: () => void | Promise<void>) => {
 
 export class BoothElement extends HTMLElement {
   static get observedAttributes() {
-    return ["config", "config-src", "person-name", "person-line"];
+    return ["config", "config-src", "person-name", "person-line", "person-handle", "avatar-endpoint"];
   }
 
   private root: ShadowRoot;
@@ -112,8 +122,12 @@ export class BoothElement extends HTMLElement {
   }
 
   attributeChangedCallback(name: string, old: string | null, now: string | null) {
-    if (name === "person-name" || name === "person-line") {
-      this.person = { name: this.getAttribute("person-name") ?? undefined, line: this.getAttribute("person-line") ?? undefined };
+    if (name === "avatar-endpoint") {
+      if (this.cfg) this.renderPanel();
+      return;
+    }
+    if (name === "person-name" || name === "person-line" || name === "person-handle") {
+      this.person = { name: this.getAttribute("person-name") ?? undefined, line: this.getAttribute("person-line") ?? undefined, handle: this.getAttribute("person-handle") ?? undefined };
       return;
     }
     // the first values are read by connectedCallback; only later changes reload
@@ -126,8 +140,9 @@ export class BoothElement extends HTMLElement {
    * frames that show one). They can still change the name and line.
    * avatar: an image URL (allowing CORS), Blob or ImageBitmap.
    */
-  set person(p: { name?: string; line?: string; avatar?: string | Blob | ImageBitmap | null }) {
+  set person(p: { name?: string; line?: string; avatar?: string | Blob | ImageBitmap | null; handle?: string; network?: Network }) {
     if (typeof p.name === "string") this.name = p.name.slice(0, 40);
+    if (typeof p.handle === "string") this.handle = { network: p.network ?? this.handle.network, username: cleanHandle(p.handle) };
     if (typeof p.line === "string") this.caption = p.line.slice(0, 60);
     if (p.avatar !== undefined) void this.setAvatar(p.avatar);
     if (this.cfg) {
@@ -136,7 +151,7 @@ export class BoothElement extends HTMLElement {
     }
   }
   get person() {
-    return { name: this.name, line: this.caption };
+    return { name: this.name, line: this.caption, handle: this.handle.username, network: this.handle.network };
   }
 
   private avatar: ImageBitmap | null = null;
@@ -262,6 +277,8 @@ export class BoothElement extends HTMLElement {
     // words
     const fields = h("div", { style: { display: "grid", gap: "10px" } });
     fields.appendChild(this.nameField());
+    if (c.person.handle.ask) fields.appendChild(this.handleField());
+    if (c.person.picture) fields.appendChild(this.pictureField());
     fields.appendChild(this.text(c.person.lineLabel, this.caption, 60, (v) => (this.caption = v), "A line under the photo (optional)"));
     for (const s of listWordSlots().filter((s) => s.frame === this.frame)) {
       const own = c.words[s.id];
@@ -303,6 +320,78 @@ export class BoothElement extends HTMLElement {
         } }, "🎲 Give me one")
       : null;
     return h("label", { class: "field" }, p.nameLabel, h("div", { class: "row", style: { flexWrap: "nowrap" } }, input, dice), list);
+  }
+
+  private handle: { network: Network; username: string } = { network: "telegram", username: "" };
+
+  /** Their username and where it's from; shown with their picture in a tag on every frame. */
+  private handleField() {
+    const nets = this.cfg.person.handle.networks;
+    if (!nets.includes(this.handle.network)) this.handle.network = nets[0]!;
+    const sel = h("select", { "aria-label": "Network", style: { width: "auto", flex: "0 0 auto" } }, ...nets.map((n) => h("option", { value: n, selected: n === this.handle.network }, NETWORKS[n].label)));
+    const input = h("input", { type: "text", value: this.handle.username ? `@${this.handle.username}` : "", maxLength: 60, placeholder: "@username", autocomplete: "off", autocapitalize: "none", spellcheck: false, enterkeyhint: "done" });
+    sel.addEventListener("change", () => {
+      this.handle.network = sel.value as Network;
+      this.renderPanel();
+      void this.redraw();
+    });
+    input.addEventListener("input", () => {
+      this.handle.username = cleanHandle(input.value);
+      void this.redraw();
+    });
+    // tidy a pasted link ("https://t.me/name") into "@name" when they leave the field
+    input.addEventListener("change", () => (input.value = this.handle.username ? `@${this.handle.username}` : ""));
+    return h("label", { class: "field" }, this.cfg.person.handle.label, h("div", { class: "row", style: { flexWrap: "nowrap" } }, sel, input));
+  }
+
+  /** Their picture: from their Telegram or X profile (with the server's lookup), an upload, or set by the host page (an NFT). */
+  private pictureField() {
+    const endpoint = this.getAttribute("avatar-endpoint");
+    const net = this.handle.network;
+    const canLookUp = endpoint && (net === "telegram" || net === "x");
+    const file = h("input", { type: "file", accept: "image/*", style: { display: "none" } });
+    file.addEventListener("change", async () => {
+      const f = file.files?.[0];
+      file.value = "";
+      if (f) await this.setAvatar(f);
+      this.renderPanel();
+    });
+    const lookUp = canLookUp
+      ? h("button", { class: "small", type: "button", onclick: async (e: Event) => {
+          const b = e.currentTarget as HTMLButtonElement;
+          if (!this.handle.username) return this.status(`Type your ${NETWORKS[net].label} username first.`, true);
+          b.disabled = true;
+          this.status(`Getting your ${NETWORKS[net].label} picture…`);
+          try {
+            const u = new URL(endpoint, document.baseURI);
+            u.searchParams.set("network", net);
+            u.searchParams.set("handle", this.handle.username);
+            const r = await fetch(u, { credentials: "same-origin" });
+            const body = (await r.json().catch(() => ({}))) as { picture?: string; error?: string };
+            if (!r.ok || !body.picture?.startsWith("data:image/")) throw new Error(body.error || "Couldn't get that picture.");
+            await this.setAvatar(dataUrlBlob(body.picture));
+            this.status("Got it. It shows in the tag on your photo.");
+          } catch (err) {
+            this.status(err instanceof Error ? err.message : "Couldn't get that picture.", true);
+          } finally {
+            b.disabled = false;
+            this.renderPanel();
+          }
+        } }, `Use my ${NETWORKS[net].label} picture`)
+      : null;
+    const preview = this.avatar ? h("canvas", { width: 44, height: 44, style: { width: "44px", height: "44px", borderRadius: "50%" } }) : null;
+    if (preview && this.avatar) {
+      const g = preview.getContext("2d")!;
+      const k = Math.max(44 / this.avatar.width, 44 / this.avatar.height);
+      g.drawImage(this.avatar, 22 - (this.avatar.width * k) / 2, 22 - (this.avatar.height * k) / 2, this.avatar.width * k, this.avatar.height * k);
+    }
+    return h(
+      "div",
+      { class: "field" },
+      "Your picture",
+      h("span", { class: "hint" }, canLookUp ? "Your public profile picture, or upload one (an NFT, a selfie). Nothing is kept." : "Upload one: a profile picture, an NFT, a selfie."),
+      h("div", { class: "row" }, preview, lookUp, h("label", { class: "btn small" }, this.avatar ? "Change" : "Upload", file), this.avatar ? h("button", { class: "small", type: "button", onclick: () => void this.setAvatar(null).then(() => this.renderPanel()) }, "Remove") : null),
+    );
   }
 
   private text(label: string, value: string, max: number, onInput: (v: string) => void, hint = "") {
@@ -369,14 +458,14 @@ export class BoothElement extends HTMLElement {
 
   private async redraw() {
     const seq = ++this.renderSeq;
-    const p = await createPreviewer({ config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, avatar: this.avatar ?? undefined });
+    const p = await createPreviewer({ config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, avatar: this.avatar ?? undefined, handle: this.handle });
     if (seq !== this.renderSeq) return;
     this.previewer = p;
     if (!this.live()) p.draw(this.view, VIEW_W, this.shown());
   }
 
   private options() {
-    return { config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, avatar: this.avatar ?? undefined, photos: this.shots.map((s) => s.image) };
+    return { config: this.cfg, frame: this.frame, ratio: this.ratio, palette: this.palette, words: this.typed, name: this.name, caption: this.caption, avatar: this.avatar ?? undefined, handle: this.handle, photos: this.shots.map((s) => s.image) };
   }
 
   private fileName(kind: string, ext: string) {

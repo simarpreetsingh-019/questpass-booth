@@ -9,4 +9,6 @@ QuestPass Booth is built so that the people using a booth don't have to trust an
 
 **What the host page can do.** The page the booth is on receives each finished photo and video as an event, so it can offer to add them to its own gallery. That's the host's code and the host's privacy policy, not this package's. Hosts should ask before uploading.
 
+**The picture lookup** (`questpass-booth/server`, optional) runs on the host's server when someone taps "Use my Telegram/X picture". It sends that username, and nothing else, to Telegram (or, if the host switched it on, the fxtwitter.com service for X) to get the public profile picture. It keeps nothing.
+
 **The brand lookup** (`questpass-booth/server`, optional) runs on the host's server. It fetches a brand's public web page and icons when someone setting up a booth asks for it. It stores nothing beyond a one-hour in-memory cache and sends nothing about the people using the booth.

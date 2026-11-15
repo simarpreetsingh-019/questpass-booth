@@ -1,4 +1,5 @@
 import { type FrameId } from "../engine/upstream/frames";
+import { type Network } from "./handle";
 export declare const CONFIG_VERSION = 1;
 export type WordMode = "fixed" | "edit" | "off";
 export type HeadingFont = "default" | "condensed";
@@ -60,6 +61,14 @@ export interface BoothConfig {
             first: string[];
             last: string[];
         };
+        /** ask for a username, shown with their picture in a tag on every frame */
+        handle: {
+            ask: boolean;
+            label: string;
+            networks: Network[];
+        };
+        /** let people add a picture: upload one, or (with the server's lookup) their Telegram or X profile picture */
+        picture: boolean;
     };
     /** the frames' text spaces, by id (see listWordSlots): fixed words, people write, or off */
     words: Record<string, {

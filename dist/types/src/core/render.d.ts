@@ -8,6 +8,7 @@ import { type IntroSound } from "../engine/upstream/music";
 import { type Quality, type Ratio } from "../engine/upstream/reel";
 import { type BoothConfig } from "./config";
 import { photosFor } from "./frames-meta";
+import { type Network } from "./handle";
 export type { FrameId, Ratio, Quality, IntroSound };
 export declare const RATIO_SIZES: Record<Ratio, [number, number]>;
 /** Anything a photo can come from. */
@@ -28,8 +29,13 @@ export interface FrameOptions {
     name?: string;
     /** the photo's caption */
     caption?: string;
-    /** their picture (e.g. a profile NFT), on frames that show one (badge, game card, story) and the video's cards */
+    /** their picture (a profile picture, an NFT): in the name tag on every frame, and on frames that show one */
     avatar?: PhotoSource;
+    /** their username, in the name tag on every frame */
+    handle?: {
+        network: Network;
+        username: string;
+    };
 }
 /** A photo as an ImageBitmap the frames can draw (EXIF rotation applied, very big ones shrunk). */
 export declare function toBitmap(src: PhotoSource, maxSide?: number): Promise<ImageBitmap>;

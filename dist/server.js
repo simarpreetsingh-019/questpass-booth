@@ -243,6 +243,57 @@ async function fetchBrand(input, opts = {}) {
   return { name: name || host(page.url), website: `${page.url.protocol}//${page.url.host}`, logo, themeColor };
 }
 
+// server/avatar.ts
+var AvatarNotFoundError = class extends Error {
+  constructor(msg) {
+    super(msg);
+    this.name = "AvatarNotFoundError";
+  }
+};
+var USERNAME = /^[A-Za-z0-9_]{1,32}$/;
+var TELEGRAM_IMAGES = /(^|\.)(telesco\.pe|telegram\.org|cdn-telegram\.org)$/;
+var X_IMAGES = /^pbs\.twimg\.com$/;
+async function image(url, hosts, o) {
+  const u = new URL(url);
+  if (u.protocol !== "https:" || !hosts.test(u.hostname)) throw new AvatarNotFoundError("unexpected picture host");
+  const max = 1024 * 1024;
+  const r = await safeGet(u, { ...o, maxBytes: max, accept: "image/jpeg,image/png,image/webp" });
+  const type = r.status < 400 && r.body.length < max ? sniffImage(r.body) : null;
+  if (!type) throw new AvatarNotFoundError("no picture");
+  return `data:${type};base64,${r.body.toString("base64")}`;
+}
+async function fetchAvatar(network, username, opts = {}) {
+  const o = { maxBytes: 256 * 1024, timeoutMs: opts.timeoutMs ?? 6e3, accept: "text/html", userAgent: opts.userAgent ?? "Mozilla/5.0 (compatible; QuestPassBooth/1; profile picture)" };
+  const name = username.replace(/^@/, "");
+  if (!USERNAME.test(name)) throw new AvatarNotFoundError("That isn't a username.");
+  if (network === "telegram") {
+    for (const host of ["t.me", "telegram.me"]) {
+      try {
+        const page = await safeGet(`https://${host}/${name}`, o);
+        const og = tags(page.body.toString("utf8"), "meta").find((m) => (m.property ?? "").toLowerCase() === "og:image")?.content ?? "";
+        if (!og || /telegram\.org\/img\/t_logo/.test(og)) throw new AvatarNotFoundError("No public Telegram profile picture for that username.");
+        return await image(og, TELEGRAM_IMAGES, o);
+      } catch (e) {
+        if (e instanceof AvatarNotFoundError || e instanceof BlockedAddressError) throw e;
+      }
+    }
+    throw new AvatarNotFoundError("Telegram didn't answer.");
+  }
+  if (network === "x") {
+    if (!opts.x) throw new AvatarNotFoundError("X pictures aren't switched on here. Upload one instead.");
+    const r = await safeGet(`https://api.fxtwitter.com/${name}`, { ...o, accept: "application/json" });
+    let url = "";
+    try {
+      url = String(JSON.parse(r.body.toString("utf8")).user?.avatar_url ?? "");
+    } catch {
+      url = "";
+    }
+    if (!url) throw new AvatarNotFoundError("No X profile picture for that username.");
+    return image(url.replace(/_normal(\.\w+)$/, "_400x400$1"), X_IMAGES, o);
+  }
+  throw new AvatarNotFoundError("Pictures can be looked up for Telegram and X. Upload one instead.");
+}
+
 // server/index.ts
 var hits = /* @__PURE__ */ new Map();
 function limited(key, perHour) {
@@ -257,38 +308,61 @@ function limited(key, perHour) {
   if (hits.size > 1e4) hits.clear();
   return false;
 }
-var cache = /* @__PURE__ */ new Map();
-function createBrandHandler(opts = {}) {
+function endpoint(opts, what, run) {
   const allow = new Set(opts.allowOrigins ?? []);
   return async function handle(req) {
     const origin = req.headers.get("origin");
     const cors = origin && allow.has(origin) ? { "access-control-allow-origin": origin, vary: "Origin" } : {};
-    const json = (status, body) => new Response(JSON.stringify(body), { status, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff", ...cors } });
+    const json = (status2, body2) => new Response(JSON.stringify(body2), { status: status2, headers: { "content-type": "application/json; charset=utf-8", "cache-control": "no-store", "x-content-type-options": "nosniff", ...cors } });
     if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: { ...cors, "access-control-allow-methods": "GET", "access-control-max-age": "600" } });
     if (req.method !== "GET") return json(405, { error: "GET only" });
-    if (origin && !allow.has(origin) && origin !== new URL(req.url).origin) return json(403, { error: "This site may not use the brand lookup." });
-    const input = new URL(req.url).searchParams.get("url") ?? "";
-    if (!input.trim() || input.length > 300) return json(400, { error: "Add ?url=<website>." });
+    if (origin && !allow.has(origin) && origin !== new URL(req.url).origin) return json(403, { error: `This site may not use the ${what}.` });
     const caller = opts.callerOf?.(req) ?? req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "anon";
-    if (limited(caller, opts.perHour ?? 30)) return json(429, { error: "Too many lookups. Try again in a while." });
-    const key = input.trim().toLowerCase();
-    const hit = cache.get(key);
-    if (hit && Date.now() - hit.at < 36e5) return json(200, hit.kit);
-    try {
-      const kit = await fetchBrand(input, opts);
-      if (cache.size > 500) cache.clear();
-      cache.set(key, { at: Date.now(), kit });
-      return json(200, kit);
-    } catch (e) {
-      if (e instanceof BrandBlockedError) return json(451, { error: "This brand asked not to be used." });
-      if (e instanceof BlockedAddressError) return json(422, { error: "That address can't be looked up." });
-      return json(422, { error: "Couldn't read that website. Add the logo and colours by hand." });
-    }
+    if (limited(`${what}|${caller}`, opts.perHour ?? 30)) return json(429, { error: "Too many lookups. Try again in a while." });
+    const [status, body] = await run(new URL(req.url).searchParams);
+    return json(status, body);
   };
 }
+var brands = /* @__PURE__ */ new Map();
+function createBrandHandler(opts = {}) {
+  return endpoint(opts, "brand lookup", async (q) => {
+    const input = q.get("url") ?? "";
+    if (!input.trim() || input.length > 300) return [400, { error: "Add ?url=<website>." }];
+    const key = input.trim().toLowerCase();
+    const hit = brands.get(key);
+    if (hit && Date.now() - hit.at < 36e5) return [200, hit.kit];
+    try {
+      const kit = await fetchBrand(input, opts);
+      if (brands.size > 500) brands.clear();
+      brands.set(key, { at: Date.now(), kit });
+      return [200, kit];
+    } catch (e) {
+      if (e instanceof BrandBlockedError) return [451, { error: "This brand asked not to be used." }];
+      if (e instanceof BlockedAddressError) return [422, { error: "That address can't be looked up." }];
+      return [422, { error: "Couldn't read that website. Add the logo and colours by hand." }];
+    }
+  });
+}
+function createAvatarHandler(opts = {}) {
+  return endpoint(opts, "picture lookup", async (q) => {
+    const network = q.get("network") ?? "";
+    const handle = (q.get("handle") ?? "").slice(0, 40);
+    try {
+      return [200, { picture: await fetchAvatar(network, handle, opts) }];
+    } catch (e) {
+      return [422, { error: e instanceof AvatarNotFoundError ? e.message : "Couldn't get that picture. Upload one instead." }];
+    }
+  });
+}
 function nodeBrandHandler(opts = {}) {
+  return toNode((callerOf) => createBrandHandler({ ...opts, callerOf: opts.callerOf ?? callerOf }));
+}
+function nodeAvatarHandler(opts = {}) {
+  return toNode((callerOf) => createAvatarHandler({ ...opts, callerOf: opts.callerOf ?? callerOf }));
+}
+function toNode(make) {
   const SOCKET = "x-questpass-booth-peer";
-  const handle = createBrandHandler({ ...opts, callerOf: opts.callerOf ?? ((r) => r.headers.get(SOCKET) ?? "anon") });
+  const handle = make((r) => r.headers.get(SOCKET) ?? "anon");
   return async (req, res) => {
     const url = `http://${req.headers.host ?? "localhost"}${req.url ?? "/"}`;
     const headers = new Headers();
@@ -301,12 +375,16 @@ function nodeBrandHandler(opts = {}) {
   };
 }
 export {
+  AvatarNotFoundError,
   BlockedAddressError,
   BrandBlockedError,
   checkUrl,
+  createAvatarHandler,
   createBrandHandler,
+  fetchAvatar,
   fetchBrand,
   isPublicAddress,
+  nodeAvatarHandler,
   nodeBrandHandler,
   pngFromIco,
   readPage,

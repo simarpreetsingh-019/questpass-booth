@@ -13,6 +13,7 @@
  * after it's opened, whatever is going on; "Turn off" stops it any time.
  */
 import { type BoothConfig } from "../core/config";
+import { type Network } from "../core/handle";
 export declare class BoothElement extends HTMLElement {
     static get observedAttributes(): string[];
     private root;
@@ -61,11 +62,15 @@ export declare class BoothElement extends HTMLElement {
         name?: string;
         line?: string;
         avatar?: string | Blob | ImageBitmap | null;
+        handle?: string;
+        network?: Network;
     });
     get person(): {
         name?: string;
         line?: string;
         avatar?: string | Blob | ImageBitmap | null;
+        handle?: string;
+        network?: Network;
     };
     private avatar;
     private setAvatar;
@@ -80,6 +85,11 @@ export declare class BoothElement extends HTMLElement {
     private renderPanel;
     /** The name: typed, picked from the booth's list of names, or made up with 🎲. */
     private nameField;
+    private handle;
+    /** Their username and where it's from; shown with their picture in a tag on every frame. */
+    private handleField;
+    /** Their picture: from their Telegram or X profile (with the server's lookup), an upload, or set by the host page (an NFT). */
+    private pictureField;
     private text;
     private frameChip;
     private actions;

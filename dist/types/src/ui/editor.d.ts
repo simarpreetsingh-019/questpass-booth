@@ -30,7 +30,7 @@ export declare class EditorElement extends HTMLElement {
     get config(): BoothConfig;
     set config(v: unknown);
     connectedCallback(): void;
-    attributeChangedCallback(_name: string, old: string | null, now: string | null): void;
+    attributeChangedCallback(name: string, old: string | null, now: string | null): void;
     private loaded;
     private load;
     /** Change the config, redraw the preview, and tell the host (debounced). */

@@ -15,13 +15,38 @@ booth.person = {
 };
 ```
 
-Without JavaScript you can use `<questpass-booth person-name="Chorizo Corleone" person-line="Extra cheese">`.
+Without JavaScript you can use `<questpass-booth person-name="Chorizo Corleone" person-line="Extra cheese" person-handle="chorizo">`. You can also pass `handle` and `network` ("telegram", "x", "instagram") to `booth.person`.
 
 They can still edit the name and line in the booth. The picture appears on frames that show one (the badge, the game card, the story) and on the video's cards.
 
 For the picture:
 - **Fetch it from your own server, not the browser.** Get the NFT image server-side (from the metadata's `image` field; for `ipfs://` use your gateway) and serve it from your domain, or pass a Blob. Many NFT hosts don't allow CORS, and that keeps your API keys off the page.
 - **Discord is the same:** the avatar URL (`cdn.discordapp.com/avatars/…`) comes from your login flow.
+
+## Usernames and profile pictures
+
+With `person.handle.ask` on, people type their username (Telegram, X or Instagram; pasted links like `https://t.me/name` are tidied to `@name`). It's shown as a tag on every frame: their picture, the network's mark and @username, in the corner of the photo.
+
+Their picture can come from:
+- **An upload:** a profile picture, an NFT or a selfie (`person.picture`).
+- **Your site:** `booth.person = { avatar }`, for example the NFT from their connected wallet.
+- **Their public profile**, through the picture lookup on your server:
+
+```js
+// Next.js: app/api/avatar/route.js
+import { createAvatarHandler } from "questpass-booth/server";
+export const GET = createAvatarHandler({ allowOrigins: ["https://your.site"], x: true });
+```
+
+Then `<questpass-booth avatar-endpoint="/api/avatar">` shows "Use my Telegram picture" (or X).
+
+| Network | How | Notes |
+|---|---|---|
+| Telegram | the public profile page (`t.me/name`) | Public profiles with a photo. No keys needed. |
+| X | the open fxtwitter.com service | Off unless `x: true`. X has no free official way, so this is unofficial and could stop working. |
+| Instagram | not supported | Instagram blocks automated requests and its terms forbid them, so people upload a picture instead. |
+
+The lookup runs only when the person taps the button. It sends only the username to Telegram or fxtwitter, from your server, and keeps nothing.
 
 ## Sending photos somewhere (a Discord channel, a party gallery)
 

@@ -10,6 +10,11 @@ import { MAX_ITEMS, RATIOS, framePalette, previewFrame, recordReel, type Quality
 import { normalizeConfig, offeredFrames, type BoothConfig } from "./config";
 import { personOf, prepare } from "./brand";
 import { frameMeta, ownColors, photosFor } from "./frames-meta";
+import { cleanHandle, drawTag, isNetwork, type Network } from "./handle";
+import { setFrameOverlay } from "../engine/upstream/reel";
+
+// the name tag (picture, @username) goes over every frame
+setFrameOverlay(drawTag);
 
 export type { FrameId, Ratio, Quality, IntroSound };
 export const RATIO_SIZES = RATIOS;
@@ -34,8 +39,10 @@ export interface FrameOptions {
   name?: string;
   /** the photo's caption */
   caption?: string;
-  /** their picture (e.g. a profile NFT), on frames that show one (badge, game card, story) and the video's cards */
+  /** their picture (a profile picture, an NFT): in the name tag on every frame, and on frames that show one */
   avatar?: PhotoSource;
+  /** their username, in the name tag on every frame */
+  handle?: { network: Network; username: string };
 }
 
 /** Big photos are shrunk to this on their long side (an HD Story frame is 2160×3840). */
@@ -73,6 +80,11 @@ async function stillOptions(o: FrameOptions) {
   const caption = (o.caption ?? "").slice(0, 60);
   const person = personOf(o.name ?? "", cfg);
   if (o.avatar) person.avatar = { kind: "image", image: await toBitmap(o.avatar, 1024) };
+  const username = cleanHandle(o.handle?.username);
+  if (username && cfg.person.handle.ask) {
+    person.handle = `@${username}`;
+    person.network = isNetwork(o.handle?.network) ? o.handle.network : undefined;
+  }
   return {
     cfg,
     frame,

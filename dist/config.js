@@ -2389,6 +2389,14 @@ function listFrames() {
 }
 var isFrameId = (v) => typeof v === "string" && FRAME_IDS.includes(v);
 
+// src/core/handle.ts
+var NETWORKS = {
+  telegram: { label: "Telegram", color: "#2AABEE", mark: "\u2708", url: (u) => `https://t.me/${u}` },
+  x: { label: "X", color: "#000000", mark: "\u{1D54F}", url: (u) => `https://x.com/${u}` },
+  instagram: { label: "Instagram", color: "#E1306C", mark: "\u25CE", url: (u) => `https://instagram.com/${u}` }
+};
+var isNetwork = (v) => typeof v === "string" && v in NETWORKS;
+
 // src/core/config.ts
 var CONFIG_VERSION = 1;
 var DEFAULT_COLORS = { accent: "#38FF9C", highlight: "#FFC440", base: "#0E0E0E", text: "#F5F5F0" };
@@ -2403,7 +2411,7 @@ function defaultConfig() {
     credit: true,
     frames: { allow: "all", default: "polaroid", first: [] },
     packs: [],
-    person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] } },
+    person: { wholeName: true, nameLabel: "Your name", lineLabel: "Caption", names: [], suggest: { first: [], last: [] }, handle: { ask: false, label: "Your username", networks: ["telegram", "x", "instagram"] }, picture: false },
     words: {},
     video: { enabled: true, qr: true, showBrand: true },
     share: { text: "Made at the photo booth {link}", link: "" },
@@ -2471,6 +2479,7 @@ function normalizeConfig(input) {
   }
   const person = isObj(c.person) ? c.person : {};
   const suggest = isObj(person.suggest) ? person.suggest : {};
+  const handle = isObj(person.handle) ? person.handle : {};
   const list = (v, max, each) => Array.isArray(v) ? [...new Set(v.map((x) => cleanText(x, each)).filter(Boolean))].slice(0, max) : [];
   return {
     version: CONFIG_VERSION,
@@ -2498,7 +2507,13 @@ function normalizeConfig(input) {
       nameLabel: cleanText(person.nameLabel, 30, d.person.nameLabel),
       lineLabel: cleanText(person.lineLabel, 30, d.person.lineLabel),
       names: list(person.names, 5e3, 40),
-      suggest: { first: list(suggest.first, 500, 20), last: list(suggest.last, 500, 20) }
+      suggest: { first: list(suggest.first, 500, 20), last: list(suggest.last, 500, 20) },
+      handle: {
+        ask: bool(handle.ask, d.person.handle.ask),
+        label: cleanText(handle.label, 30, d.person.handle.label),
+        networks: Array.isArray(handle.networks) && handle.networks.filter(isNetwork).length ? [...new Set(handle.networks.filter(isNetwork))] : d.person.handle.networks
+      },
+      picture: bool(person.picture, d.person.picture)
     },
     words,
     video: { enabled: bool(video.enabled, d.video.enabled), qr: bool(video.qr, d.video.qr), showBrand: bool(video.showBrand, d.video.showBrand) },

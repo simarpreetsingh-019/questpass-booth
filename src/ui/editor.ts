@@ -47,7 +47,7 @@ async function imageOf(dataUrl: string): Promise<HTMLImageElement> {
 
 export class EditorElement extends HTMLElement {
   static get observedAttributes() {
-    return ["config", "config-src"];
+    return ["config", "config-src", "brand-endpoint"];
   }
 
   private root: ShadowRoot;
@@ -81,7 +81,11 @@ export class EditorElement extends HTMLElement {
     void this.load();
   }
 
-  attributeChangedCallback(_name: string, old: string | null, now: string | null) {
+  attributeChangedCallback(name: string, old: string | null, now: string | null) {
+    if (name === "brand-endpoint") {
+      if (this.loaded) this.build();
+      return;
+    }
     // the first values are read by connectedCallback; only later changes reload
     if (this.loaded && old !== now && this.configProp === undefined) void this.load();
   }
@@ -357,6 +361,9 @@ export class EditorElement extends HTMLElement {
         this.input("Photos kept at once", String(c.maxPhotos), 2, (c, v) => (c.maxPhotos = Number(v) || 9), { type: "number" }),
       ),
       this.check("3-second countdown before each shot", c.camera.timer, (c, v) => (c.camera.timer = v)),
+      this.check("Ask for a username (Telegram, X, Instagram), shown on every frame", c.person.handle.ask, (c, v) => (c.person.handle.ask = v)),
+      this.check("Let people add their picture (upload, or their Telegram or X picture)", c.person.picture, (c, v) => (c.person.picture = v)),
+      this.check("Show whole names (mafia names), not just the first word", c.person.wholeName, (c, v) => (c.person.wholeName = v)),
       this.check(`“${CREDIT_LINE}” on the frames and video`, c.credit, (c, v) => (c.credit = v)),
       h("p", { class: "note" }, "QuestPass Booth is free and open source. Keeping the credit on is how it stays that way."),
     );

@@ -1,6 +1,11 @@
 // The demo page: switch tabs, give the editor's settings to the booth, and log the booth's events.
 const booth = document.querySelector("questpass-booth");
 const editor = document.querySelector("questpass-booth-editor");
+// the lookups need the demo's own server (npm run demo); a static copy (GitHub Pages) has none
+if (location.port === "8787") {
+  booth.setAttribute("avatar-endpoint", "/api/avatar");
+  editor.setAttribute("brand-endpoint", "/api/brand");
+}
 const log = document.getElementById("log");
 // the event log is for developers: shown only with ?debug in the address
 log.hidden = !new URLSearchParams(location.search).has("debug");

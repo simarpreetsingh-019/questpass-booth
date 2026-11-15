@@ -15,7 +15,10 @@ export interface JourneyInput {
   theme?: SponsorTheme | null;
   layout?: "collectible";
   name: string;
+  /** "@username", shown in the booth's name tag */
   handle?: string;
+  /** where the handle is from: "telegram", "x", "instagram" */
+  network?: string;
   avatar: RecapAvatar;
   role: string;
   city: string;
