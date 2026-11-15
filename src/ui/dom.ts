@@ -68,6 +68,11 @@ export function applyTheme(host: HTMLElement, c: BoothConfig) {
   host.style.setProperty("--qp-highlight", k.highlight);
   host.style.setProperty("--qp-base", k.base);
   host.style.setProperty("--qp-text", k.text);
+  host.style.setProperty("--qp-heading", c.brand.headingFont === "condensed" ? '"Asap Condensed", "Arial Narrow", Inter, system-ui, sans-serif' : "Inter, system-ui, sans-serif");
+  // text on the accent colour: black or white, whichever reads
+  const v = parseInt(k.accent.slice(1), 16);
+  const light = (0.2126 * ((v >> 16) & 255) + 0.7152 * ((v >> 8) & 255) + 0.0722 * (v & 255)) / 255;
+  host.style.setProperty("--qp-on-accent", light > 0.6 ? "#111111" : "#FFFFFF");
 }
 
 /** Save a file the ordinary way (a download). */

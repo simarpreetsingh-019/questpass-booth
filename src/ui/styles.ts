@@ -23,7 +23,8 @@ export const CSS = `
 .wrap { max-width: 560px; margin: 0 auto; padding: 16px; display: grid; gap: 14px; }
 .head { display: flex; align-items: center; gap: 10px; min-height: 40px; }
 .head img { height: 32px; max-width: 120px; object-fit: contain; }
-.head h2 { margin: 0; font-size: 18px; font-weight: 800; line-height: 1.2; }
+.head h2 { margin: 0; font: 800 20px/1.1 var(--qp-heading, Inter, system-ui, sans-serif); letter-spacing: -.01em; }
+.card h3, details.card > summary { font-family: var(--qp-heading, Inter, system-ui, sans-serif); }
 .head .sub { font-size: 12px; opacity: .7; }
 .stage { position: relative; display: grid; place-items: center; background: color-mix(in srgb, var(--qp-text) 6%, var(--qp-base)); border-radius: var(--qp-radius); padding: 10px; }
 .stage canvas { display: block; width: 100%; height: auto; max-height: 68vh; object-fit: contain; border-radius: 6px; }
@@ -37,7 +38,7 @@ export const CSS = `
 button, .btn { font: inherit; min-height: 44px; padding: 10px 16px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--qp-text) 22%, transparent); background: transparent; color: var(--qp-text); cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; }
 button:disabled { opacity: .45; cursor: default; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, .chip:focus-visible { outline: 2px solid var(--qp-accent); outline-offset: 2px; }
-.primary { background: var(--qp-accent); color: var(--qp-on-accent, #111); border-color: transparent; font-weight: 800; }
+.primary { background: var(--qp-accent); color: var(--qp-on-accent, #111); border-color: transparent; font-weight: 800; font-family: var(--qp-heading, inherit); letter-spacing: .01em; }
 .big { min-height: 52px; font-size: 16px; padding: 12px 22px; }
 .wide { width: 100%; }
 .shutter { width: 76px; height: 76px; border-radius: 50%; padding: 0; background: #fff; border: 6px solid var(--qp-accent); box-shadow: 0 0 0 2px rgba(0,0,0,.3); }

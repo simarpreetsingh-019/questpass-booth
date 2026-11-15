@@ -44,6 +44,7 @@ export declare class EditorElement extends HTMLElement {
     private build;
     private basics;
     private brand;
+    private headingChoice;
     private frames;
     private words;
     private videoAndSharing;

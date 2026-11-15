@@ -33,6 +33,7 @@ A booth is one JSON object. Every field is optional. `normalizeConfig()` fills i
 | `brand.website` | "" | http(s). Printed on frames that show an address. |
 | `brand.logo` | "" | A PNG, JPEG, WebP or GIF data URL (up to about 1.5 MB), or an https URL that allows CORS. No SVG, because SVG files can carry scripts. |
 | `brand.colors` | green on black | Four `#RRGGBB` colours. |
+| `brand.headingFont` | "default" | `"condensed"` for a bold condensed title and buttons (Asap Condensed). |
 | `showBrand` | true | The logo on the frames and the video's opening card. |
 | `credit` | true | "made with QuestPass". Please keep it on. |
 | `frames.allow` | "all" | `"all"` or a list of frame ids (see `listFrames()`). |

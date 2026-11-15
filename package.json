@@ -43,6 +43,7 @@
     "qrcode": "1.5.4"
   },
   "devDependencies": {
+    "@fontsource/asap-condensed": "^5.1.1",
     "@fontsource/bebas-neue": "5.1.1",
     "@fontsource/caveat": "5.1.1",
     "@fontsource/cinzel": "5.1.1",

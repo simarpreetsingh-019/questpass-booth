@@ -20,6 +20,8 @@ export const FONT_FILES: Face[] = [
   ["Permanent Marker", "permanent-marker-latin-400-normal.woff2", "400", "normal"],
   ["Playfair Display", "playfair-display-latin-800-italic.woff2", "800", "italic"],
   ["Bebas Neue", "bebas-neue-latin-400-normal.woff2", "400", "normal"],
+  // the booth's own headings, when the config asks for the condensed look
+  ["Asap Condensed", "asap-condensed-latin-800-normal.woff2", "800", "normal"],
 ];
 
 let base: string | null | undefined;

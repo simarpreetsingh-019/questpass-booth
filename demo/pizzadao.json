@@ -1,0 +1,116 @@
+{
+  "version": 1,
+  "title": "Global Pizza Party",
+  "place": "",
+  "dates": "22 May",
+  "brand": {
+    "name": "PizzaDAO",
+    "website": "https://pizzadao.org",
+    "logo": "",
+    "colors": {
+      "accent": "#FF393A",
+      "highlight": "#FFD23D",
+      "base": "#0B0B10",
+      "text": "#FEFDFA"
+    },
+    "headingFont": "condensed"
+  },
+  "showBrand": true,
+  "credit": true,
+  "frames": {
+    "allow": "all",
+    "default": "neon"
+  },
+  "words": {
+    "neon.sign": {
+      "mode": "fixed",
+      "text": "PIZZA TIME"
+    },
+    "neon.below": {
+      "mode": "edit",
+      "text": "Pizza the Planet."
+    },
+    "magazine.cover": {
+      "mode": "edit",
+      "text": "Pizza the Planet."
+    },
+    "newspaper.headline": {
+      "mode": "edit",
+      "text": "PIZZA THE PLANET"
+    },
+    "newspaper.story": {
+      "mode": "edit",
+      "text": "It started with 10,000 BTC for two pizzas. Now hundreds of cities throw the same party on the same day."
+    },
+    "postcard.message": {
+      "mode": "edit",
+      "text": "Wish you were here! 🍕"
+    },
+    "comic.caption": {
+      "mode": "edit",
+      "text": "MEANWHILE… PIZZA PARTY!"
+    },
+    "pass.from": {
+      "mode": "edit",
+      "text": "Home"
+    },
+    "pass.to": {
+      "mode": "fixed",
+      "text": "Pizza Party"
+    },
+    "pass.gate": {
+      "mode": "edit",
+      "text": "GPP"
+    },
+    "pass.seat": {
+      "mode": "edit",
+      "text": "XL"
+    },
+    "passport.country": {
+      "mode": "fixed",
+      "text": "Republic of Pizza"
+    },
+    "passport.stamps": {
+      "mode": "edit",
+      "text": "Extra cheese, Pizza Mafia, 10,000 BTC, Slice approved"
+    },
+    "ticket.line": {
+      "mode": "fixed",
+      "text": "Pepperoni line"
+    },
+    "ticket.stops": {
+      "mode": "edit",
+      "text": "Dough, Sauce, Cheese"
+    },
+    "lanyard.role": {
+      "mode": "edit",
+      "text": "Pizza Mafia"
+    },
+    "lanyard.org": {
+      "mode": "edit",
+      "text": "PizzaDAO"
+    },
+    "gamecard.class": {
+      "mode": "edit",
+      "text": "Pizza Mafia"
+    },
+    "gamecard.power": {
+      "mode": "edit",
+      "text": "Eats 10,000 BTC of pizza"
+    }
+  },
+  "video": {
+    "enabled": true,
+    "qr": true,
+    "showBrand": true
+  },
+  "share": {
+    "text": "Pizza the Planet 🍕 Made at the Global Pizza Party {link}",
+    "link": "https://globalpizza.party"
+  },
+  "camera": {
+    "idleSeconds": 30,
+    "timer": true
+  },
+  "maxPhotos": 9
+}

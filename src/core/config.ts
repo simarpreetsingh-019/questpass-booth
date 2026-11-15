@@ -13,6 +13,7 @@ import { isFrameId } from "./frames-meta";
 export const CONFIG_VERSION = 1;
 
 export type WordMode = "fixed" | "edit" | "off";
+export type HeadingFont = "default" | "condensed";
 
 export interface BoothColors {
   /** buttons, highlights, the frames' main colour */
@@ -41,6 +42,8 @@ export interface BoothConfig {
     /** its logo: a data: image (made by the editor) or an https image URL that allows CORS; empty for none */
     logo: string;
     colors: BoothColors;
+    /** the booth's own title and buttons: "default" (Inter) or "condensed" (Asap Condensed, heavy) */
+    headingFont: HeadingFont;
   };
   /** show the brand's logo on the frames and the video's cards */
   showBrand: boolean;
@@ -86,7 +89,7 @@ export function defaultConfig(): BoothConfig {
     title: "Photo booth",
     place: "",
     dates: "",
-    brand: { name: "", website: "", logo: "", colors: { ...DEFAULT_COLORS } },
+    brand: { name: "", website: "", logo: "", colors: { ...DEFAULT_COLORS }, headingFont: "default" },
     showBrand: true,
     credit: true,
     frames: { allow: "all", default: "polaroid" },
@@ -187,6 +190,7 @@ export function normalizeConfig(input: unknown): BoothConfig {
         base: color(colors.base, d.brand.colors.base),
         text: color(colors.text, d.brand.colors.text),
       },
+      headingFont: brand.headingFont === "condensed" ? "condensed" : "default",
     },
     showBrand: bool(c.showBrand, d.showBrand),
     credit: bool(c.credit, d.credit),

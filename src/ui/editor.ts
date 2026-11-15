@@ -259,9 +259,16 @@ export class EditorElement extends HTMLElement {
         fromLogo,
       ),
       h("div", { class: "row" }, this.color("Main colour", "accent"), this.color("Second colour", "highlight"), this.color("Background", "base"), this.color("Text", "text")),
+      this.headingChoice(),
       this.check("Show the brand's logo on the frames", c.showBrand, (c, v) => (c.showBrand = v)),
       h("p", { class: "note" }, "Only use a brand's name and logo with the owner's OK."),
     );
+  }
+
+  private headingChoice() {
+    const sel = h("select", { "aria-label": "Heading style" }, h("option", { value: "default", selected: this.cfg.brand.headingFont === "default" }, "Clean (Inter)"), h("option", { value: "condensed", selected: this.cfg.brand.headingFont === "condensed" }, "Bold condensed (Asap Condensed)"));
+    sel.addEventListener("change", () => this.update((c) => (c.brand.headingFont = sel.value === "condensed" ? "condensed" : "default")));
+    return h("label", { class: "field" }, "Heading style", h("span", { class: "hint" }, "The booth's title and buttons"), sel);
   }
 
   private frames() {
