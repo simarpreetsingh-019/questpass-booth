@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 (2026-11-16)
+
+- New frame for every booth, in the **Clean** group: **Prints collage**. Like Festive prints with no decorations: up to three photos as prints on paper, laid out so every photo shows (a zigzag on tall sizes, a cascade on square, across on wide), with the title, name and line underneath. Paper, white, black and kraft colour sets.
+
 ## 1.1.0 (2026-11-16)
 
 - New frame for every booth, in a new **Festive** group: **Festive prints**. Two photo prints on warm paper, gold hanging diyas and a mandala, with the title, name and line written underneath. Three colour sets: cream & gold, maroon night, ivory & marigold. For Diwali, Lohri, Gurpurab, weddings and community evenings.

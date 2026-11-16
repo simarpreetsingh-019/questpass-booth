@@ -1,4 +1,4 @@
-/*! QuestPass Booth 1.1.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
+/*! QuestPass Booth 1.2.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
 
 // src/shims/sponsors.ts
 var DEFAULT_THEME = {
@@ -3470,67 +3470,128 @@ function mandala(ctx, cx, cy, r, gold, s) {
   ctx.fill();
   ctx.restore();
 }
-var festivePrints = {
+function collageGeo(W, H, u) {
+  const k = 0.72;
+  if (W >= H * 0.95 && !wide2(W, H)) {
+    const w2 = (W - 120 * u) / 2.05;
+    const h2 = w2 * k;
+    const main2 = { x: 60 * u, y: 70 * u, w: w2, h: h2 };
+    const second2 = { x: main2.x + w2 * 0.6, y: main2.y + h2 * 0.45, w: w2, h: h2 };
+    const third2 = { x: main2.x + w2 * 1.2, y: main2.y + h2 * 0.9, w: w2, h: h2 };
+    const box2 = (bottom) => ({ x: 100 * u, y: bottom + 36 * u, w: W - 200 * u, h: H - bottom - 100 * u });
+    return { main: main2, second: second2, third: third2, text2: box2(second2.y + h2), text3: box2(third2.y + h2) };
+  }
+  if (W >= H * 0.95) {
+    const w2 = Math.min((W - 200 * u) / 2.6, (H - 330 * u) / (k * 1.3));
+    const h2 = w2 * k;
+    const x0 = (W - w2 * 2.6) / 2;
+    const main2 = { x: x0, y: 110 * u, w: w2, h: h2 };
+    const second2 = { x: x0 + w2 * 0.8, y: main2.y + h2 * 0.3, w: w2, h: h2 };
+    const third2 = { x: x0 + w2 * 1.6, y: main2.y + h2 * 0.05, w: w2, h: h2 };
+    const top = second2.y + h2 + 50 * u;
+    const text2 = { x: 100 * u, y: top, w: W - 200 * u, h: H - top - 70 * u };
+    return { main: main2, second: second2, third: third2, text2, text3: text2 };
+  }
+  const w = Math.min(W * 0.72, (H - 360 * u) / (k * 2.6));
+  const h = w * k;
+  const main = { x: 80 * u, y: (H / W >= 1.5 ? 150 : 90) * u, w, h };
+  const second = { x: W - 80 * u - w, y: main.y + h * 0.8, w, h };
+  const third = { x: 100 * u, y: second.y + h * 0.8, w, h };
+  const box = (top) => ({ x: 110 * u, y: top + 40 * u, w: W - 220 * u, h: H - top - 110 * u });
+  return { main, second, third, text2: box(second.y + h), text3: box(third.y + h) };
+}
+function printsFrame(o) {
+  const collage = !o.decorated;
+  return {
+    label: o.label,
+    group: o.group,
+    palettes: o.palettes,
+    window(W, H, u) {
+      if (collage) return collageGeo(W, H, u).main;
+      if (wide2(W, H)) return { x: 120 * u, y: 150 * u, w: W * 0.5, h: H * 0.56 };
+      const t = H / W;
+      const w = W - (t >= 1.5 ? 200 : 240) * u;
+      const h = t >= 1.5 ? w * (collage ? 0.72 : 0.8) : t >= 1.2 ? w * 0.6 : w * 0.52;
+      return { x: (W - w) / 2 - 10 * u, y: (t >= 1.5 ? collage ? 200 : 250 : t >= 1.2 ? 170 : 120) * u, w, h };
+    },
+    tilt: TILT,
+    ownsText: true,
+    marks: ["tl", "tr"],
+    back(ctx, f) {
+      const { W, H, u, R, pal } = f;
+      ctx.fillStyle = pal.bg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = withA(pal.ink, 0.025);
+      for (let i = 0; i < 1600; i++) ctx.fillRect(i * 7919 % W, i * 104729 % H, 2 * u, 2 * u);
+      if (o.decorated) mandala(ctx, W * 0.04, H * (wide2(W, H) ? 0.92 : 0.9), Math.min(W, H) * 0.34, pal.accent, u);
+      const photos = f.photos ?? [];
+      if (collage) {
+        const g = collageGeo(W, H, u);
+        if (photos[2]) print(ctx, g.third, -0.02, u, pal.paper, photos[2]);
+        print(ctx, g.second, 0.025, u, pal.paper, photos[1] ?? photos[0]);
+      } else {
+        print(ctx, backPrint(f), 0.012, u, pal.paper, photos[1] ?? photos[0]);
+      }
+      print(ctx, R, TILT, u, pal.paper);
+    },
+    front(ctx, f) {
+      const { W, H, u, R, pal } = f;
+      const tall = H / W >= 1.5;
+      if (o.decorated) {
+        const s = Math.min(W, H) / 1080;
+        const lamps = wide2(W, H) ? [[60, 220], [150, 360], [240, 150]] : tall ? [[70, 300], [165, 500], [260, 210]] : [[70, 260], [160, 420], [250, 180]];
+        for (const [x, len] of lamps) diya(ctx, x * s, -10 * s, len * s, s, pal.accent, pal.accent2);
+      }
+      const back = backPrint(f);
+      const g = collage ? collageGeo(W, H, u) : null;
+      const below = g ? (f.photos ?? []).length >= 3 ? g.text3 : g.text2 : wide2(W, H) ? { x: R.x + R.w * 0.62, y: back.y + back.h + 40 * u, w: W - R.x - R.w * 0.62 - 90 * u, h: H - back.y - back.h - 80 * u } : { x: 120 * u, y: back.y + back.h + 40 * u, w: W - 240 * u, h: H - back.y - back.h - 90 * u };
+      const title = word2(f, `${o.id}.title`, f.eventName);
+      const name = f.journey.name.trim();
+      const line = (f.text ?? "").trim() || word2(f, `${o.id}.note`, "");
+      const place = [f.brand?.place, f.eventDates].filter(Boolean).join(" \xB7 ").toUpperCase();
+      const lines = [
+        [title, 64, SERIF, pal.fg],
+        [name, 62, HAND2, pal.ink],
+        [line, 44, HAND2, withA(pal.ink, 0.85)],
+        [place, 22, MONO2, pal.accent]
+      ].filter(([s]) => s);
+      const big = tall ? 1.45 : 1;
+      for (const l of lines) l[1] *= big;
+      const total = lines.reduce((t, [, px]) => t + px * 1.3 * u, 0);
+      const k = below.h > 0 ? Math.min(1, below.h / total) : 0.5;
+      let y = below.y + Math.max(0, (below.h - total * k) / 2);
+      for (const [s2, px, font, color2] of lines) {
+        y += px * 0.65 * u * k;
+        say2(ctx, s2, below.x + below.w / 2, y, below.w, px * u * k, font, color2);
+        y += px * 0.65 * u * k;
+      }
+      text(ctx, f.brand?.credit || CREDIT_LINE, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
+    }
+  };
+}
+var festivePrints = printsFrame({
+  id: "festive-prints",
   label: "\u{1FA94} Festive prints",
   group: "Festive",
+  decorated: true,
   palettes: () => [
     P3("Cream & gold", "#ECE8E1", "#5A3E2B", "#8C7A6B", "#FFFFFF", "#4A3527", "#C9973C", "#E8892B"),
     P3("Maroon night", "#3B0E14", "#F6E7C8", "#C9A98A", "#FBF6EC", "#F6E7C8", "#D8A845", "#FF9D3D"),
     P3("Ivory & marigold", "#FBF4E4", "#7A2E12", "#A7826A", "#FFFFFF", "#5B2A12", "#D9902A", "#E8642B")
-  ],
-  window(W, H, u) {
-    if (wide2(W, H)) return { x: 120 * u, y: 150 * u, w: W * 0.5, h: H * 0.56 };
-    const t = H / W;
-    const w = W - (t >= 1.5 ? 200 : 240) * u;
-    const h = t >= 1.5 ? w * 0.8 : t >= 1.2 ? w * 0.6 : w * 0.52;
-    return { x: (W - w) / 2 - 10 * u, y: (t >= 1.5 ? 250 : t >= 1.2 ? 170 : 120) * u, w, h };
-  },
-  tilt: TILT,
-  ownsText: true,
-  marks: ["tl", "tr"],
-  back(ctx, f) {
-    const { W, H, u, R, pal } = f;
-    ctx.fillStyle = pal.bg;
-    ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = withA(pal.ink, 0.025);
-    for (let i = 0; i < 1600; i++) ctx.fillRect(i * 7919 % W, i * 104729 % H, 2 * u, 2 * u);
-    mandala(ctx, W * 0.04, H * (wide2(W, H) ? 0.92 : 0.9), Math.min(W, H) * 0.34, pal.accent, u);
-    const photos = f.photos ?? [];
-    const second = photos[1] ?? photos[0];
-    print(ctx, backPrint(f), 0.012, u, pal.paper, second);
-    print(ctx, R, TILT, u, pal.paper);
-  },
-  front(ctx, f) {
-    const { W, H, u, R, pal } = f;
-    const s = Math.min(W, H) / 1080;
-    const tall = H / W >= 1.5;
-    const lamps = wide2(W, H) ? [[60, 220], [150, 360], [240, 150]] : tall ? [[70, 300], [165, 500], [260, 210]] : [[70, 260], [160, 420], [250, 180]];
-    for (const [x, len] of lamps) diya(ctx, x * s, -10 * s, len * s, s, pal.accent, pal.accent2);
-    const back = backPrint(f);
-    const below = wide2(W, H) ? { x: R.x + R.w * 0.62, y: back.y + back.h + 40 * u, w: W - R.x - R.w * 0.62 - 90 * u, h: H - back.y - back.h - 80 * u } : { x: 120 * u, y: back.y + back.h + 40 * u, w: W - 240 * u, h: H - back.y - back.h - 90 * u };
-    const title = word2(f, "festive-prints.title", f.eventName);
-    const name = f.journey.name.trim();
-    const line = (f.text ?? "").trim() || word2(f, "festive-prints.note", "");
-    const place = [f.brand?.place, f.eventDates].filter(Boolean).join(" \xB7 ").toUpperCase();
-    const lines = [
-      [title, 64, SERIF, pal.fg],
-      [name, 62, HAND2, pal.ink],
-      [line, 44, HAND2, withA(pal.ink, 0.85)],
-      [place, 22, MONO2, pal.accent]
-    ].filter(([s2]) => s2);
-    const big = tall ? 1.45 : 1;
-    for (const l of lines) l[1] *= big;
-    const total = lines.reduce((t, [, px]) => t + px * 1.3 * u, 0);
-    const k = below.h > 0 ? Math.min(1, below.h / total) : 0.5;
-    let y = below.y + Math.max(0, (below.h - total * k) / 2);
-    for (const [s2, px, font, color2] of lines) {
-      y += px * 0.65 * u * k;
-      say2(ctx, s2, below.x + below.w / 2, y, below.w, px * u * k, font, color2);
-      y += px * 0.65 * u * k;
-    }
-    text(ctx, f.brand?.credit || CREDIT_LINE, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
-  }
-};
+  ]
+});
+var printsCollage = printsFrame({
+  id: "prints-collage",
+  label: "\u{1F5BC}\uFE0F Prints collage",
+  group: "Clean",
+  decorated: false,
+  palettes: () => [
+    P3("Paper", "#ECE8E1", "#3A3530", "#8C847A", "#FFFFFF", "#3A3530", "#8C7A6B", "#C9973C"),
+    P3("White", "#F7F7F5", "#222222", "#8A8A8A", "#FFFFFF", "#222222", "#555555", "#999999"),
+    P3("Black", "#111111", "#F2F2F2", "#9A9A9A", "#FAFAFA", "#F2F2F2", "#BDBDBD", "#888888"),
+    P3("Kraft", "#C9A27A", "#2E2117", "#6E5440", "#FBF7F0", "#2E2117", "#5A3E2B", "#8C6A4A")
+  ]
+});
 var done2 = false;
 function registerFestiveFrames() {
   if (done2) return;
@@ -3538,11 +3599,14 @@ function registerFestiveFrames() {
   registerFrame("festive-prints", festivePrints, { best: "Family, friends, festive evenings", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "dhol"], group: "Festive", ownColors: true });
   registerWordSlot({ id: "festive-prints.title", frame: "festive-prints", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
   registerWordSlot({ id: "festive-prints.note", frame: "festive-prints", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
+  registerFrame("prints-collage", printsCollage, { best: "Two or three photos as prints, no decorations", ratio: "4:5", intro: "vinyl", tracks: ["chai", "sunset", "happy"], group: "Clean", ownColors: true });
+  registerWordSlot({ id: "prints-collage.title", frame: "prints-collage", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
+  registerWordSlot({ id: "prints-collage.note", frame: "prints-collage", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
 }
 registerFestiveFrames();
 
 // src/core/version.ts
-var VERSION = "1.1.0";
+var VERSION = "1.2.0";
 export {
   CONFIG_VERSION,
   PIZZA_PACK,
