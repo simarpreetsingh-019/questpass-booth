@@ -1,5 +1,5 @@
---- a/src/engine/upstream/reel.ts	2026-11-15 19:32:06
-+++ b/src/engine/upstream/reel.ts	2026-11-15 19:32:06
+--- a/src/engine/upstream/reel.ts	2026-11-16 19:23:46
++++ b/src/engine/upstream/reel.ts	2026-11-16 19:23:46
 @@ -16,6 +16,7 @@
  import { routeScene, type JourneyInput } from "@/features/journey/engine/render-journey";
  import { drawFrame } from "@/features/recap/engine/gif-encoder";
@@ -8,33 +8,17 @@
  import { FRAMES, drawQr, sponsorLogo, type FrameBrand, type FrameCtx, type FrameId, type Palette, type Rect } from "./frames";
  
  export type Ratio = "9:16" | "4:5" | "1:1" | "16:9";
-@@ -93,25 +94,13 @@
- };
- export const DEFAULT_CAPTION: CaptionStyle = { font: "bold", color: "white" };
- 
--/** The extra caption fonts (Google Fonts, allowed by the site's CSP), loaded once before drawing. */
-+/** The extra caption fonts, served with the booth (no third-party font host), loaded once before drawing. */
+@@ -97,11 +98,11 @@
  let captionFonts: Promise<void> | null = null;
  export function loadCaptionFonts(): Promise<void> {
    if (typeof document === "undefined") return Promise.resolve();
--  captionFonts ??= new Promise<void>((res) => {
--    const href = "https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Permanent+Marker&family=Playfair+Display:ital,wght@1,800&family=Bebas+Neue&display=swap";
--    let link = document.querySelector<HTMLLinkElement>(`link[href="${href}"]`);
--    const ready = () =>
--      void Promise.all((["hand", "marker", "serif", "poster"] as CaptionFont[]).map((f) => document.fonts.load(CAPTION_FONTS[f].font(40)).catch(() => undefined))).then(() => res());
--    if (link) return ready();
--    link = document.createElement("link");
--    link.rel = "stylesheet";
--    link.href = href;
--    link.onload = ready;
--    link.onerror = () => res();
--    document.head.appendChild(link);
--    // never hold the reel up for long: fall back to the next font in the stack
--    setTimeout(res, 4000);
--  });
-+  captionFonts ??= loadBoothFonts().then(() =>
-+    Promise.all((["hand", "marker", "serif", "poster"] as CaptionFont[]).map((f) => document.fonts.load(CAPTION_FONTS[f].font(40)).catch(() => undefined))).then(() => undefined),
-+  );
+-  captionFonts ??= Promise.race([
++  captionFonts ??= loadBoothFonts().then(() => Promise.race([
+     Promise.all((["hand", "marker", "serif", "poster"] as CaptionFont[]).map((f) => document.fonts.load(CAPTION_FONTS[f].font(40)).catch(() => undefined))).then(() => undefined),
+     // never hold the reel up for long: fall back to the next font in the stack
+     new Promise<void>((res) => setTimeout(res, 4000)),
+-  ]);
++  ]));
    return captionFonts;
  }
  

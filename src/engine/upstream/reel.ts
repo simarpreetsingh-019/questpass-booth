@@ -94,13 +94,15 @@ export const CAPTION_COLORS: Record<CaptionColor, () => string> = {
 };
 export const DEFAULT_CAPTION: CaptionStyle = { font: "bold", color: "white" };
 
-/** The extra caption fonts, served with the booth (no third-party font host), loaded once before drawing. */
+/** The extra caption fonts (served by this site, see globals.css), loaded once before drawing. */
 let captionFonts: Promise<void> | null = null;
 export function loadCaptionFonts(): Promise<void> {
   if (typeof document === "undefined") return Promise.resolve();
-  captionFonts ??= loadBoothFonts().then(() =>
+  captionFonts ??= loadBoothFonts().then(() => Promise.race([
     Promise.all((["hand", "marker", "serif", "poster"] as CaptionFont[]).map((f) => document.fonts.load(CAPTION_FONTS[f].font(40)).catch(() => undefined))).then(() => undefined),
-  );
+    // never hold the reel up for long: fall back to the next font in the stack
+    new Promise<void>((res) => setTimeout(res, 4000)),
+  ]));
   return captionFonts;
 }
 

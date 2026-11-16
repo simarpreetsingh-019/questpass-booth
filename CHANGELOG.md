@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.2 (2026-11-17)
+
+- Engine from QuestPass 6a6c934 (QuestPass now serves its own fonts too; the fonts patch here was remade for it). Nothing changes for booths.
+
 ## 1.3.1 (2026-11-17)
 
 - The engine now comes straight from QuestPass (1667293), which took in this repo's engine changes (whole names, the frame overlay, the video-clip hooks) and the two print frames. Only the fonts patch is still local. Nothing changes for booths.
