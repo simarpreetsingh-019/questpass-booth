@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.1.0 (2026-11-16)
+
+- New frame for every booth, in a new **Festive** group: **Festive prints**. Two photo prints on warm paper, gold hanging diyas and a mandala, with the title, name and line written underneath. Three colour sets: cream & gold, maroon night, ivory & marigold. For Diwali, Lohri, Gurpurab, weddings and community evenings.
+- Hidden controls stay hidden (the video maker's Cancel button showed before a video was being made).
+
 ## 1.0.0 (2026-11-15)
 
 First release.

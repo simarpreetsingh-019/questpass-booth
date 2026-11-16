@@ -1,4 +1,4 @@
-/*! QuestPass Booth 1.0.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
+/*! QuestPass Booth 1.1.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
 
 // src/shims/sponsors.ts
 var DEFAULT_THEME = {
@@ -142,11 +142,11 @@ function roundRect(ctx, r, rad) {
 function wrap(ctx, s, maxW, lines = 2) {
   const out = [];
   let cur = "";
-  for (const word2 of s.split(/\s+/).filter(Boolean)) {
-    const next = cur ? `${cur} ${word2}` : word2;
+  for (const word3 of s.split(/\s+/).filter(Boolean)) {
+    const next = cur ? `${cur} ${word3}` : word3;
     if (ctx.measureText(next).width > maxW && cur) {
       out.push(cur);
-      cur = word2;
+      cur = word3;
       if (out.length === lines) break;
     } else cur = next;
   }
@@ -330,19 +330,19 @@ function ticketPath(ctx, c, rad, notch, nr) {
   ctx.closePath();
 }
 function passLayout(W, H, u) {
-  const wide2 = W >= H * 0.95;
-  if (wide2) {
+  const wide3 = W >= H * 0.95;
+  if (wide3) {
     const card2 = { x: 50 * u, y: 70 * u, w: W - 100 * u, h: H - 130 * u };
     const stubW = Math.min(440 * u, card2.w * 0.34);
     const tear2 = card2.x + card2.w - stubW;
     const R2 = { x: card2.x + 30 * u, y: card2.y + 200 * u, w: tear2 - card2.x - 60 * u, h: card2.h - 230 * u };
-    return { wide: wide2, card: card2, tear: tear2, R: R2, head: { x: card2.x, y: card2.y, w: tear2 - card2.x, h: 200 * u }, stub: { x: tear2, y: card2.y, w: stubW, h: card2.h } };
+    return { wide: wide3, card: card2, tear: tear2, R: R2, head: { x: card2.x, y: card2.y, w: tear2 - card2.x, h: 200 * u }, stub: { x: tear2, y: card2.y, w: stubW, h: card2.h } };
   }
   const card = { x: 50 * u, y: 60 * u, w: W - 100 * u, h: H - 100 * u };
   const stubH = 300 * u;
   const tear = card.y + card.h - stubH;
   const R = { x: card.x + 30 * u, y: card.y + 270 * u, w: card.w - 60 * u, h: tear - card.y - 310 * u };
-  return { wide: wide2, card, tear, R, head: { x: card.x, y: card.y, w: card.w, h: 270 * u }, stub: { x: card.x, y: tear, w: card.w, h: stubH } };
+  return { wide: wide3, card, tear, R, head: { x: card.x, y: card.y, w: card.w, h: 270 * u }, stub: { x: card.x, y: tear, w: card.w, h: stubH } };
 }
 function barcode(ctx, seed, x, y, w, h, ink) {
   let v = 0;
@@ -369,17 +369,17 @@ var rarFor = (f) => {
   return f.pal.rarity ? { ...RARITY[f.pal.rarity], name: own.name, stars: own.stars } : own;
 };
 function gameLayout(W, H, u) {
-  const wide2 = W >= H * 0.95;
-  const card = wide2 ? { x: 60 * u, y: 70 * u, w: W - 120 * u, h: H - 140 * u } : { x: 60 * u, y: 90 * u, w: W - 120 * u, h: H - 150 * u };
+  const wide3 = W >= H * 0.95;
+  const card = wide3 ? { x: 60 * u, y: 70 * u, w: W - 120 * u, h: H - 140 * u } : { x: 60 * u, y: 90 * u, w: W - 120 * u, h: H - 150 * u };
   const m = 34 * u;
-  if (wide2) {
+  if (wide3) {
     const pw = Math.min(480 * u, card.w * 0.36);
     const R2 = { x: card.x + m, y: card.y + m, w: card.w - m * 2 - pw - 16 * u, h: card.h - m * 2 };
-    return { wide: wide2, card, R: R2, panel: { x: R2.x + R2.w + 16 * u, y: R2.y, w: pw, h: R2.h } };
+    return { wide: wide3, card, R: R2, panel: { x: R2.x + R2.w + 16 * u, y: R2.y, w: pw, h: R2.h } };
   }
   const ph = 330 * u;
   const R = { x: card.x + m, y: card.y + m, w: card.w - m * 2, h: card.h - m * 2 - ph };
-  return { wide: wide2, card, R, panel: { x: R.x, y: R.y + R.h + 16 * u, w: R.w, h: card.y + card.h - m - (R.y + R.h + 16 * u) } };
+  return { wide: wide3, card, R, panel: { x: R.x, y: R.y + R.h + 16 * u, w: R.w, h: card.y + card.h - m - (R.y + R.h + 16 * u) } };
 }
 function chamfer(ctx, c, k) {
   ctx.beginPath();
@@ -531,16 +531,16 @@ function chestOpening(ctx, f) {
   }
 }
 function badgeLayout(W, H, u) {
-  const wide2 = W >= H * 0.95;
-  if (wide2) {
+  const wide3 = W >= H * 0.95;
+  if (wide3) {
     const side = Math.min(220 * u, W * 0.1);
     const badge2 = { x: side, y: 150 * u, w: W - side * 2, h: H - 210 * u };
     const R2 = { x: badge2.x + 40 * u, y: badge2.y + 110 * u, w: badge2.w * 0.62, h: badge2.h - 150 * u };
-    return { wide: wide2, badge: badge2, R: R2, info: { x: R2.x + R2.w + 36 * u, y: R2.y, w: badge2.x + badge2.w - 40 * u - (R2.x + R2.w + 36 * u), h: R2.h } };
+    return { wide: wide3, badge: badge2, R: R2, info: { x: R2.x + R2.w + 36 * u, y: R2.y, w: badge2.x + badge2.w - 40 * u - (R2.x + R2.w + 36 * u), h: R2.h } };
   }
   const badge = { x: 100 * u, y: 250 * u, w: W - 200 * u, h: H - 330 * u };
   const R = { x: badge.x + 40 * u, y: badge.y + 140 * u, w: badge.w - 80 * u, h: badge.h - 520 * u };
-  return { wide: wide2, badge, R, info: { x: R.x, y: R.y + R.h + 30 * u, w: R.w, h: badge.y + badge.h - 40 * u - (R.y + R.h + 30 * u) } };
+  return { wide: wide3, badge, R, info: { x: R.x, y: R.y + R.h + 30 * u, w: R.w, h: badge.y + badge.h - 40 * u - (R.y + R.h + 30 * u) } };
 }
 var qrCache = /* @__PURE__ */ new Map();
 function drawQr(ctx, data, x, y, size, ink, opts = {}) {
@@ -729,10 +729,10 @@ function playerLayout(W, H, u) {
   return { R, info: { x: R.x, y: R.y + R.h + 60 * u, w: R.w } };
 }
 function calLayout(W, H, u) {
-  const wide2 = isWide(W, H);
+  const wide3 = isWide(W, H);
   const sheet = { x: 60 * u, y: 70 * u, w: W - 120 * u, h: H - 110 * u };
-  const head = wide2 ? 230 * u : 360 * u;
-  return { wide: wide2, sheet, R: { x: sheet.x + (wide2 ? 40 : 40) * u, y: sheet.y + head, w: sheet.w - 80 * u, h: sheet.h - head - (wide2 ? 90 : 140) * u } };
+  const head = wide3 ? 230 * u : 360 * u;
+  return { wide: wide3, sheet, R: { x: sheet.x + (wide3 ? 40 : 40) * u, y: sheet.y + head, w: sheet.w - 80 * u, h: sheet.h - head - (wide3 ? 90 : 140) * u } };
 }
 var CODE = { bar: 70, line: 44, top: 3, bottom: 4, status: 50, gutter: 100 };
 function codeWindow(W, H, u) {
@@ -2100,14 +2100,14 @@ var DEFS = {
       const gap = 8 * u;
       const bw = (W - x0 * 2 - gap * (n - 1)) / n;
       for (let i = 0; i < n; i++) {
-        const done2 = f.seg ? i < f.seg.i ? 1 : i === f.seg.i ? f.seg.p : 0 : f.t > f.total / 2 ? 1 : 0;
+        const done3 = f.seg ? i < f.seg.i ? 1 : i === f.seg.i ? f.seg.p : 0 : f.t > f.total / 2 ? 1 : 0;
         const x = x0 + i * (bw + gap);
         ctx.fillStyle = "rgba(255,255,255,0.35)";
         roundRect(ctx, { x, y: 28 * u, w: bw, h: 6 * u }, 3 * u);
         ctx.fill();
-        if (done2 > 0) {
+        if (done3 > 0) {
           ctx.fillStyle = "#FFFFFF";
-          roundRect(ctx, { x, y: 28 * u, w: bw * done2, h: 6 * u }, 3 * u);
+          roundRect(ctx, { x, y: 28 * u, w: bw * done3, h: 6 * u }, 3 * u);
           ctx.fill();
         }
       }
@@ -3335,8 +3335,214 @@ function registerPizzaPack() {
 }
 registerPizzaPack();
 
+// src/packs/festive.ts
+var P3 = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
+var wide2 = (W, H) => W > 1.3 * H;
+var TILT = -0.03;
+var SERIF = (px) => `italic 700 ${px}px "Playfair Display", Georgia, serif`;
+var HAND2 = (px) => `700 ${px}px Caveat, "Comic Sans MS", cursive`;
+var MONO2 = (px) => F.mono(px, 600);
+var word2 = (f, id, fallback) => {
+  const w = f.words?.[id];
+  return w === void 0 ? fallback : w;
+};
+function say2(ctx, s, x, y, maxW, px, font, color2, align = "center") {
+  if (!s) return;
+  let size = px;
+  ctx.font = font(size);
+  while (size > px * 0.5 && ctx.measureText(s).width > maxW) {
+    size *= 0.94;
+    ctx.font = font(size);
+  }
+  let out = s;
+  while (out.length > 1 && ctx.measureText(out).width > maxW) out = out.slice(0, -2) + "\u2026";
+  text(ctx, out, x, y, font(size), color2, align);
+}
+function backPrint(f) {
+  const { R, u, W, H } = f;
+  if (wide2(W, H)) return { x: R.x + R.w * 0.5, y: R.y + 70 * u, w: R.w * 0.78, h: R.h * 0.85 };
+  return { x: R.x + 46 * u, y: R.y + R.h * 0.62, w: R.w - 30 * u, h: R.h * 0.9 };
+}
+function print(ctx, r, rot, u, border, photo) {
+  const pad = 16 * u;
+  ctx.save();
+  ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+  ctx.rotate(rot);
+  ctx.shadowColor = "rgba(0,0,0,0.22)";
+  ctx.shadowBlur = 28 * u;
+  ctx.shadowOffsetY = 10 * u;
+  ctx.fillStyle = border;
+  ctx.fillRect(-r.w / 2 - pad, -r.h / 2 - pad, r.w + pad * 2, r.h + pad * 2);
+  ctx.shadowColor = "transparent";
+  if (photo) {
+    ctx.beginPath();
+    ctx.rect(-r.w / 2, -r.h / 2, r.w, r.h);
+    ctx.clip();
+    const k = Math.max(r.w / photo.width, r.h / photo.height);
+    ctx.drawImage(photo, -(photo.width * k) / 2, -(photo.height * k) / 2, photo.width * k, photo.height * k);
+  }
+  ctx.restore();
+}
+function diya(ctx, x, top, len, s, gold, flame) {
+  ctx.save();
+  ctx.strokeStyle = gold;
+  ctx.fillStyle = gold;
+  ctx.lineWidth = 2.4 * s;
+  ctx.lineCap = "round";
+  const link = 14 * s;
+  for (let y2 = top; y2 < top + len - link; y2 += link) {
+    ctx.beginPath();
+    ctx.ellipse(x, y2 + link / 2, 3.2 * s, link / 2 - 1 * s, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  const mid = top + len * 0.55;
+  ctx.beginPath();
+  ctx.arc(x, mid, 7 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x - 12 * s, mid + 26 * s);
+  ctx.quadraticCurveTo(x - 11 * s, mid + 6 * s, x, mid + 6 * s);
+  ctx.quadraticCurveTo(x + 11 * s, mid + 6 * s, x + 12 * s, mid + 26 * s);
+  ctx.closePath();
+  ctx.stroke();
+  const y = top + len;
+  const bw = 46 * s;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 30 * s);
+  ctx.lineTo(x - bw * 0.8, y);
+  ctx.moveTo(x, y - 30 * s);
+  ctx.lineTo(x + bw * 0.8, y);
+  ctx.moveTo(x, y - 30 * s);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(x, y, bw, 8 * s, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - bw, y);
+  ctx.quadraticCurveTo(x, y + 46 * s, x + bw, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - bw * 0.35, y + 26 * s);
+  ctx.lineTo(x - bw * 0.25, y + 40 * s);
+  ctx.lineTo(x + bw * 0.25, y + 40 * s);
+  ctx.lineTo(x + bw * 0.35, y + 26 * s);
+  ctx.stroke();
+  const g = ctx.createRadialGradient(x, y - 14 * s, 0, x, y - 14 * s, 60 * s);
+  g.addColorStop(0, withA(flame, 0.45));
+  g.addColorStop(1, withA(flame, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(x - 60 * s, y - 74 * s, 120 * s, 120 * s);
+  ctx.fillStyle = flame;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 30 * s);
+  ctx.bezierCurveTo(x + 10 * s, y - 16 * s, x + 9 * s, y - 4 * s, x, y - 2 * s);
+  ctx.bezierCurveTo(x - 9 * s, y - 4 * s, x - 10 * s, y - 16 * s, x, y - 30 * s);
+  ctx.fill();
+  ctx.restore();
+}
+function mandala(ctx, cx, cy, r, gold, s) {
+  ctx.save();
+  ctx.strokeStyle = gold;
+  ctx.fillStyle = gold;
+  ctx.lineWidth = 2 * s;
+  ctx.globalAlpha *= 0.7;
+  for (const [k, n, petal] of [[0.22, 8, 0.12], [0.42, 12, 0.14], [0.66, 16, 0.16], [0.9, 24, 0.12]]) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * k, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2;
+      ctx.save();
+      ctx.translate(cx + Math.cos(a) * r * (k + petal * 0.55), cy + Math.sin(a) * r * (k + petal * 0.55));
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * petal * 0.55, r * petal * 0.22, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a + Math.PI / n) * r * (k + petal), cy + Math.sin(a + Math.PI / n) * r * (k + petal), 2.6 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+var festivePrints = {
+  label: "\u{1FA94} Festive prints",
+  group: "Festive",
+  palettes: () => [
+    P3("Cream & gold", "#ECE8E1", "#5A3E2B", "#8C7A6B", "#FFFFFF", "#4A3527", "#C9973C", "#E8892B"),
+    P3("Maroon night", "#3B0E14", "#F6E7C8", "#C9A98A", "#FBF6EC", "#F6E7C8", "#D8A845", "#FF9D3D"),
+    P3("Ivory & marigold", "#FBF4E4", "#7A2E12", "#A7826A", "#FFFFFF", "#5B2A12", "#D9902A", "#E8642B")
+  ],
+  window(W, H, u) {
+    if (wide2(W, H)) return { x: 120 * u, y: 150 * u, w: W * 0.5, h: H * 0.56 };
+    const t = H / W;
+    const w = W - (t >= 1.5 ? 200 : 240) * u;
+    const h = t >= 1.5 ? w * 0.8 : t >= 1.2 ? w * 0.6 : w * 0.52;
+    return { x: (W - w) / 2 - 10 * u, y: (t >= 1.5 ? 250 : t >= 1.2 ? 170 : 120) * u, w, h };
+  },
+  tilt: TILT,
+  ownsText: true,
+  marks: ["tl", "tr"],
+  back(ctx, f) {
+    const { W, H, u, R, pal } = f;
+    ctx.fillStyle = pal.bg;
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = withA(pal.ink, 0.025);
+    for (let i = 0; i < 1600; i++) ctx.fillRect(i * 7919 % W, i * 104729 % H, 2 * u, 2 * u);
+    mandala(ctx, W * 0.04, H * (wide2(W, H) ? 0.92 : 0.9), Math.min(W, H) * 0.34, pal.accent, u);
+    const photos = f.photos ?? [];
+    const second = photos[1] ?? photos[0];
+    print(ctx, backPrint(f), 0.012, u, pal.paper, second);
+    print(ctx, R, TILT, u, pal.paper);
+  },
+  front(ctx, f) {
+    const { W, H, u, R, pal } = f;
+    const s = Math.min(W, H) / 1080;
+    const tall = H / W >= 1.5;
+    const lamps = wide2(W, H) ? [[60, 220], [150, 360], [240, 150]] : tall ? [[70, 300], [165, 500], [260, 210]] : [[70, 260], [160, 420], [250, 180]];
+    for (const [x, len] of lamps) diya(ctx, x * s, -10 * s, len * s, s, pal.accent, pal.accent2);
+    const back = backPrint(f);
+    const below = wide2(W, H) ? { x: R.x + R.w * 0.62, y: back.y + back.h + 40 * u, w: W - R.x - R.w * 0.62 - 90 * u, h: H - back.y - back.h - 80 * u } : { x: 120 * u, y: back.y + back.h + 40 * u, w: W - 240 * u, h: H - back.y - back.h - 90 * u };
+    const title = word2(f, "festive-prints.title", f.eventName);
+    const name = f.journey.name.trim();
+    const line = (f.text ?? "").trim() || word2(f, "festive-prints.note", "");
+    const place = [f.brand?.place, f.eventDates].filter(Boolean).join(" \xB7 ").toUpperCase();
+    const lines = [
+      [title, 64, SERIF, pal.fg],
+      [name, 62, HAND2, pal.ink],
+      [line, 44, HAND2, withA(pal.ink, 0.85)],
+      [place, 22, MONO2, pal.accent]
+    ].filter(([s2]) => s2);
+    const big = tall ? 1.45 : 1;
+    for (const l of lines) l[1] *= big;
+    const total = lines.reduce((t, [, px]) => t + px * 1.3 * u, 0);
+    const k = below.h > 0 ? Math.min(1, below.h / total) : 0.5;
+    let y = below.y + Math.max(0, (below.h - total * k) / 2);
+    for (const [s2, px, font, color2] of lines) {
+      y += px * 0.65 * u * k;
+      say2(ctx, s2, below.x + below.w / 2, y, below.w, px * u * k, font, color2);
+      y += px * 0.65 * u * k;
+    }
+    text(ctx, f.brand?.credit || CREDIT_LINE, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
+  }
+};
+var done2 = false;
+function registerFestiveFrames() {
+  if (done2) return;
+  done2 = true;
+  registerFrame("festive-prints", festivePrints, { best: "Family, friends, festive evenings", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "dhol"], group: "Festive", ownColors: true });
+  registerWordSlot({ id: "festive-prints.title", frame: "festive-prints", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
+  registerWordSlot({ id: "festive-prints.note", frame: "festive-prints", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
+}
+registerFestiveFrames();
+
 // src/core/version.ts
-var VERSION = "1.0.0";
+var VERSION = "1.1.0";
 export {
   CONFIG_VERSION,
   PIZZA_PACK,
