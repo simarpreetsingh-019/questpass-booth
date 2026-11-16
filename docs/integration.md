@@ -89,6 +89,16 @@ const { blob, type } = await makeVideo({ config, photos: files, frame: "booth", 
 - `createPreviewer(options)`: draws quickly and synchronously, for example a live camera inside the frame.
 - `colorsFromImage(img)`: colours from a logo, or `null` if it's black and white.
 
+Video clips:
+
+```js
+import { ClipSource, makeClipVideo, makeVideo } from "questpass-booth";
+
+const clip = await ClipSource.open(file);          // a video File or Blob, read on the device
+const framed = await makeClipVideo({ config, clip, frame: "festive-prints", start: 2, length: 10, sound: "both" });
+const recap = await makeVideo({ config, frame: "polaroid", photos: [], order: [photo1, { clip, start: 0, length: 4 }, photo2] });
+```
+
 ## 6. The brand lookup (optional, on your server)
 
 The editor's "Fill in from website" button needs a small endpoint on your server, because browsers can't read other websites:

@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.3.0 (2026-11-16)
+
+- **Video clips in the frames.** The booth has a 📸 Photo | 🎥 Video switch. In Video mode, record a clip (up to 15 s; the camera and microphone go off as soon as it ends) or choose one from the phone, trim it (up to 30 s), and it plays inside any frame. Save an MP4 with the clip's own sound, the booth's music, or both (a limiter keeps the mix clean).
+- **Clips in the recap video.** "Also make a video" takes video clips alongside the photos (＋ Add video clips): each plays for 2–10 s, in any order with the photos, with its own sound under the music.
+- New functions: `ClipSource`, `makeClipVideo`, and `makeVideo({ order: [photo, { clip, start, length }, …] })`.
+
 ## 1.2.0 (2026-11-16)
 
 - New frame for every booth, in the **Clean** group: **Prints collage**. Like Festive prints with no decorations: up to three photos as prints on paper, laid out so every photo shows (a zigzag on tall sizes, a cascade on square, across on wide), with the title, name and line underneath. Paper, white, black and kraft colour sets.

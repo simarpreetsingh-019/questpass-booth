@@ -22,6 +22,22 @@ export declare class BoothElement extends HTMLElement {
     private shots;
     private samples;
     private frame;
+    /** photos, or a video clip played inside the frame */
+    private mode;
+    private clip;
+    private clipStart;
+    private clipLen;
+    private clipSound;
+    private clipTrack;
+    private clipPlaying;
+    private clipRaf;
+    private recorder;
+    private recordTimer;
+    private recordLeft;
+    /** the recap video's photos and clips, in order */
+    private reel;
+    private reelClipSound;
+    private modeBar;
     private group;
     private ratio;
     private palette;
@@ -80,6 +96,9 @@ export declare class BoothElement extends HTMLElement {
     private load;
     private status;
     private build;
+    /** 📸 Photo | 🎥 Video (only when the booth makes videos). */
+    private renderModeBar;
+    private setMode;
     private live;
     private renderControls;
     private fileButton;
@@ -113,5 +132,16 @@ export declare class BoothElement extends HTMLElement {
     private frameOfVideo;
     private loop;
     private shoot;
+    private renderClipControls;
+    private openClip;
+    /** Record a clip with the camera and microphone (at most 15 s), then frame it. */
+    private startRecording;
+    /** Play the trimmed stretch inside the frame, round and round, until paused. */
+    private playClip;
+    private pauseClip;
+    private clipCard;
+    /** The recap's photos (the shots) and clips, in the order they play; kept in step with the shots. */
+    private syncReel;
+    private addReelClips;
     private videoCard;
 }

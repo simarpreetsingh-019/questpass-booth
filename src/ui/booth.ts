@@ -21,6 +21,8 @@ import { CREDIT_LINE } from "../core/brand";
 import { VERSION } from "../core/version";
 import { append, applyTheme, clear, download, emit, h, readConfig, shareFile, slug } from "./dom";
 import { adoptStyles } from "./styles";
+import { CLIP_MAX_SEC, ClipSource, makeClipVideo, type ClipSound } from "../core/clip";
+import { REEL_CLIP_MAX_SEC } from "../core/render";
 import { NETWORKS, cleanHandle, type Network } from "../core/handle";
 
 const SIZES: Array<[Ratio, string]> = [
@@ -71,6 +73,22 @@ export class BoothElement extends HTMLElement {
   private shots: Shot[] = [];
   private samples: ImageBitmap[] = [];
   private frame: FrameId = "polaroid";
+  /** photos, or a video clip played inside the frame */
+  private mode: "photo" | "clip" = "photo";
+  private clip: ClipSource | null = null;
+  private clipStart = 0;
+  private clipLen = 15;
+  private clipSound: ClipSound = "both";
+  private clipTrack = "";
+  private clipPlaying = false;
+  private clipRaf = 0;
+  private recorder: MediaRecorder | null = null;
+  private recordTimer = 0;
+  private recordLeft = 0;
+  /** the recap video's photos and clips, in order */
+  private reel: Array<{ kind: "photo"; shot: Shot } | { kind: "clip"; clip: ClipSource; start: number; length: number; thumb: string }> = [];
+  private reelClipSound = true;
+  private modeBar = h("div", { class: "row center", role: "tablist", "aria-label": "Photo or video" });
   private group = "";
   private ratio: Ratio = "4:5";
   private palette: PaletteChoice = "brand";
@@ -119,6 +137,7 @@ export class BoothElement extends HTMLElement {
 
   disconnectedCallback() {
     this.stopCamera();
+    this.pauseClip();
     document.removeEventListener("visibilitychange", this.onHidden);
     window.removeEventListener("pagehide", this.stopCamera);
   }
@@ -213,6 +232,7 @@ export class BoothElement extends HTMLElement {
         "div",
         { class: "wrap", part: "booth" },
         h("div", { class: "head" }, logo, h("div", null, h("h2", null, c.title), sub ? h("div", { class: "sub" }, sub) : null)),
+        this.modeBar,
         h("div", { class: "stage" }, this.view, this.feed, this.countEl, this.flashEl),
         this.controls,
         this.statusEl,
@@ -220,8 +240,31 @@ export class BoothElement extends HTMLElement {
         h("p", { class: "credit" }, "Made with ", h("a", { href: "https://github.com/simarpreetsingh-019/questpass-booth", target: "_blank", rel: "noopener noreferrer" }, "QuestPass Booth"), " by ", h("a", { href: "https://x.com/simarpreet_019", target: "_blank", rel: "noopener noreferrer" }, "@simarpreet_019")),
       ),
     ]);
+    this.renderModeBar();
     this.renderControls();
     this.renderPanel();
+  }
+
+  /** 📸 Photo | 🎥 Video (only when the booth makes videos). */
+  private renderModeBar() {
+    clear(this.modeBar);
+    if (!this.cfg.video.enabled) return;
+    for (const [m, label] of [["photo", "📸 Photo"], ["clip", "🎥 Video"]] as const) {
+      this.modeBar.appendChild(
+        h("button", { class: "small", role: "tab", "aria-selected": String(this.mode === m), style: this.mode === m ? { borderColor: "var(--qp-accent)", background: "color-mix(in srgb, var(--qp-accent) 18%, transparent)" } : {}, onclick: () => this.setMode(m) }, label),
+      );
+    }
+  }
+
+  private setMode(m: "photo" | "clip") {
+    if (m === this.mode) return;
+    this.stopCamera();
+    this.pauseClip();
+    this.mode = m;
+    this.renderModeBar();
+    this.renderControls();
+    this.renderPanel();
+    void this.redraw();
   }
 
   private live() {
@@ -230,6 +273,7 @@ export class BoothElement extends HTMLElement {
 
   private renderControls() {
     clear(this.controls);
+    if (this.mode === "clip") return this.renderClipControls();
     const pick = this.fileButton(this.shots.length ? "＋ Add photos" : "🖼️ Choose photos");
     if (this.live()) {
       const left = Math.max(0, this.cfg.camera.idleSeconds);
@@ -279,7 +323,7 @@ export class BoothElement extends HTMLElement {
     const sw = (choice: PaletteChoice, color: string, label: string) =>
       h("button", { class: "swatch", style: { background: color }, title: label, "aria-label": label, "aria-pressed": String(this.palette === choice), onclick: () => this.set({ palette: choice }) });
     swatches.appendChild(sw("brand", c.brand.colors.accent, `${c.brand.name || "Brand"} colours`));
-    if (this.shots.length) swatches.appendChild(h("button", { class: "swatch", style: { background: "conic-gradient(#f66,#fc6,#6f9,#6cf,#c6f,#f66)" }, title: "From my photo", "aria-label": "Colours from my photo", "aria-pressed": String(this.palette === "photo"), onclick: () => this.set({ palette: "photo" }) }));
+    if (this.shots.length || this.clip) swatches.appendChild(h("button", { class: "swatch", style: { background: "conic-gradient(#f66,#fc6,#6f9,#6cf,#c6f,#f66)" }, title: "From my photo", "aria-label": "Colours from my photo", "aria-pressed": String(this.palette === "photo"), onclick: () => this.set({ palette: "photo" }) }));
     for (const p of framePalettes(this.frame)) swatches.appendChild(sw(p.index, p.accent, p.name));
     // size
     const sizes = h("div", { class: "row", role: "group", "aria-label": "Size" });
@@ -305,12 +349,13 @@ export class BoothElement extends HTMLElement {
     );
     const need = this.needed();
     append(this.panel, [
-      this.shots.length ? h("div", { class: "card" }, h("h3", null, `Your photos (${this.shots.length})`), thumbs, need ? h("p", { class: "note" }, `This frame shows ${photosFor(this.frame, this.ratio)} photos: ${need} more to go.`) : null) : null,
+      this.mode === "photo" && this.shots.length ? h("div", { class: "card" }, h("h3", null, `Your photos (${this.shots.length})`), thumbs, need ? h("p", { class: "note" }, `This frame shows ${photosFor(this.frame, this.ratio)} photos: ${need} more to go.`) : null) : null,
       h("div", { class: "card" }, h("h3", null, "Frame"), tabs, strip, h("p", { class: "note" }, frameMeta(this.frame).best)),
       h("div", { class: "card" }, h("h3", null, "Colours"), swatches, h("h3", null, "Size"), sizes),
       h("div", { class: "card" }, h("h3", null, "Words"), fields),
-      this.shots.length ? this.actions() : null,
-      this.shots.length && c.video.enabled ? this.videoCard() : null,
+      this.mode === "photo" && this.shots.length ? this.actions() : null,
+      this.mode === "photo" && this.shots.length && c.video.enabled ? this.videoCard() : null,
+      this.mode === "clip" && this.clip ? this.clipCard() : null,
     ]);
   }
 
@@ -453,6 +498,7 @@ export class BoothElement extends HTMLElement {
 
   /** What a frame shows: the shots (newest first), else the samples repeated to fill it. */
   private shown(frame = this.frame, ratio = this.ratio): ImageBitmap[] {
+    if (this.mode === "clip" && this.clip) return [this.clip.canvas as unknown as ImageBitmap];
     if (this.shots.length) return this.shots.map((s) => s.image);
     const n = Math.max(this.samples.length, photosFor(frame, ratio));
     return this.samples.length ? Array.from({ length: n }, (_, i) => this.samples[i % this.samples.length]!) : [];
@@ -568,6 +614,9 @@ export class BoothElement extends HTMLElement {
 
   /** Really off: every track stopped (the camera light goes out) and the video let go. */
   stopCamera = () => {
+    // a recording in progress keeps what it has (it finishes in onstop)
+    if (this.recorder && this.recorder.state === "recording") this.recorder.stop();
+    clearInterval(this.recordTimer);
     this.cameraTurn++;
     clearTimeout(this.idleTimer);
     cancelAnimationFrame(this.raf);
@@ -617,7 +666,7 @@ export class BoothElement extends HTMLElement {
       const shot = this.frameOfVideo();
       if (shot && this.previewer) {
         try {
-          this.previewer.draw(this.view, VIEW_W, [shot, ...this.shots.map((s) => s.image)]);
+          this.previewer.draw(this.view, VIEW_W, this.mode === "clip" ? [shot] : [shot, ...this.shots.map((s) => s.image)]);
         } catch {
           // skip a frame that fails to draw
         }
@@ -659,24 +708,282 @@ export class BoothElement extends HTMLElement {
     }
   }
 
+  /* ---------------------------------------------------- video clips */
+
+  private renderClipControls() {
+    if (this.recorder) {
+      append(this.controls, [
+        h("button", { class: "primary big", onclick: this.stopCamera, "aria-label": "Stop recording" }, `■ Stop (${this.recordLeft}s)`),
+        h("p", { class: "note wide", style: { textAlign: "center" } }, "Recording… it stops by itself at 15 seconds."),
+      ]);
+      return;
+    }
+    const input = h("input", { type: "file", accept: "video/*", style: { display: "none" } });
+    input.addEventListener("change", () => {
+      const f = input.files?.[0];
+      input.value = "";
+      if (f) void this.openClip(f);
+    });
+    append(this.controls, [
+      this.clip ? h("button", { class: "primary big", onclick: () => (this.clipPlaying ? this.pauseClip() : this.playClip()) }, this.clipPlaying ? "❚❚ Pause" : "▶ Play") : null,
+      h("button", { class: this.clip ? "big" : "primary big", onclick: () => void this.startRecording() }, this.clip ? "🎥 Record again" : "🎥 Record a clip"),
+      h("label", { class: "btn" }, this.clip ? "Choose another" : "📁 Choose a video", input),
+      !this.clip ? h("p", { class: "note wide", style: { textAlign: "center" } }, `Up to ${CLIP_MAX_SEC} seconds plays inside the frame. Your video stays on your phone.`) : null,
+    ]);
+  }
+
+  private async openClip(blob: Blob) {
+    this.pauseClip();
+    this.status("Opening your video…");
+    try {
+      const next = await ClipSource.open(blob);
+      this.clip?.close();
+      this.clip = next;
+      this.clipStart = 0;
+      this.clipLen = Math.min(CLIP_MAX_SEC, Math.max(1, Math.floor(next.duration * 10) / 10));
+      this.status("");
+    } catch (e) {
+      this.status(e instanceof Error ? e.message : "That video couldn't be opened.", true);
+    }
+    this.renderControls();
+    this.renderPanel();
+    void this.redraw();
+  }
+
+  /** Record a clip with the camera and microphone (at most 15 s), then frame it. */
+  private async startRecording() {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+      this.status("This browser can't record video. Choose a video instead.", true);
+      return;
+    }
+    this.pauseClip();
+    this.stopCamera();
+    const turn = this.cameraTurn;
+    let s: MediaStream;
+    try {
+      s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: this.facing, width: { ideal: 1920 }, height: { ideal: 1920 } }, audio: true });
+    } catch {
+      this.status("The camera didn't open. Allow camera and microphone in the browser, or choose a video.", true);
+      return;
+    }
+    if (turn !== this.cameraTurn || !this.isConnected || document.hidden) {
+      s.getTracks().forEach((t) => t.stop());
+      return;
+    }
+    this.stream = s;
+    this.feed.srcObject = s;
+    await this.feed.play().catch(() => undefined);
+    emit(this, "questpass:camera", { on: true });
+    const type = ["video/mp4", "video/webm;codecs=vp9,opus", "video/webm"].find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
+    const rec = new MediaRecorder(s, type ? { mimeType: type } : undefined);
+    const chunks: Blob[] = [];
+    rec.ondataavailable = (e) => e.data.size && chunks.push(e.data);
+    rec.onstop = () => {
+      this.recorder = null;
+      clearInterval(this.recordTimer);
+      // the camera and microphone go off as soon as the recording ends
+      this.stopCamera();
+      if (chunks.length) void this.openClip(new Blob(chunks, { type: (rec.mimeType || type || "video/webm").split(";")[0] }));
+      else this.renderControls();
+    };
+    this.recorder = rec;
+    this.recordLeft = 15;
+    rec.start(250);
+    this.recordTimer = window.setInterval(() => {
+      this.recordLeft--;
+      if (this.recordLeft <= 0) this.stopCamera();
+      else this.renderControls();
+    }, 1000);
+    this.renderControls();
+    this.loop();
+  }
+
+  /** Play the trimmed stretch inside the frame, round and round, until paused. */
+  private playClip() {
+    const c = this.clip;
+    if (!c || !this.previewer) return;
+    const v = c.video;
+    // the preview plays the clip's own sound unless it's music only
+    v.muted = this.clipSound === "music";
+    if (v.currentTime < this.clipStart || v.currentTime > this.clipStart + this.clipLen) v.currentTime = this.clipStart;
+    void v.play().catch(() => undefined);
+    this.clipPlaying = true;
+    const tick = () => {
+      if (!this.clipPlaying || !this.clip) return;
+      if (v.currentTime >= this.clipStart + this.clipLen || v.ended) v.currentTime = this.clipStart;
+      this.clip.draw();
+      this.previewer?.draw(this.view, VIEW_W, [this.clip.canvas]);
+      this.clipRaf = requestAnimationFrame(tick);
+    };
+    this.clipRaf = requestAnimationFrame(tick);
+    this.renderControls();
+  }
+
+  private pauseClip() {
+    if (!this.clipPlaying) return;
+    this.clipPlaying = false;
+    cancelAnimationFrame(this.clipRaf);
+    this.clip?.video.pause();
+    if (this.isConnected) this.renderControls();
+  }
+
+  private clipCard() {
+    const c = this.clip!;
+    const maxStart = Math.max(0, Math.floor((c.duration - 0.5) * 10) / 10);
+    const fmt = (s: number) => `${s.toFixed(1)}s`;
+    const startOut = h("output", null, fmt(this.clipStart));
+    const lenOut = h("output", null, fmt(this.clipLen));
+    const start = h("input", { type: "range", min: 0, max: maxStart, step: 0.1, value: this.clipStart, "aria-label": "Start" });
+    const len = h("input", { type: "range", min: 1, max: Math.max(1, Math.min(CLIP_MAX_SEC, c.duration - this.clipStart)), step: 0.1, value: this.clipLen, "aria-label": "Length" });
+    start.addEventListener("input", () => {
+      this.clipStart = Number(start.value);
+      this.clipLen = Math.min(this.clipLen, Math.max(1, c.duration - this.clipStart));
+      len.max = String(Math.max(1, Math.min(CLIP_MAX_SEC, c.duration - this.clipStart)));
+      len.value = String(this.clipLen);
+      startOut.textContent = fmt(this.clipStart);
+      lenOut.textContent = fmt(this.clipLen);
+      void c.frameAt(this.clipStart).then(() => !this.clipPlaying && this.previewer?.draw(this.view, VIEW_W, [c.canvas]));
+    });
+    len.addEventListener("input", () => {
+      this.clipLen = Number(len.value);
+      lenOut.textContent = fmt(this.clipLen);
+    });
+    const sound = h("select", { "aria-label": "Sound" }, ...([["both", "Video sound + music"], ["clip", "Video sound only"], ["music", "Music only"]] as const).map(([v, l]) => h("option", { value: v, selected: v === this.clipSound }, l)));
+    sound.addEventListener("change", () => {
+      this.clipSound = sound.value as ClipSound;
+      c.video.muted = this.clipSound === "music";
+      track.disabled = this.clipSound === "clip";
+    });
+    const meta = frameMeta(this.frame);
+    const track = h("select", { "aria-label": "Music", disabled: this.clipSound === "clip" });
+    for (const t of listTracks()) track.appendChild(h("option", { value: t.id, selected: t.id === (this.clipTrack || meta.tracks[0]) }, t.name));
+    track.addEventListener("change", () => (this.clipTrack = track.value));
+    const quality = h("select", { "aria-label": "Quality" }, h("option", { value: "high" }, "Sharp (bigger file)"), h("option", { value: "small" }, "Smaller file"));
+    const bar = h("progress", { max: 1, value: 0, hidden: true });
+    const out = h("div", { style: { display: "grid", gap: "10px" } });
+    let ctrl: AbortController | null = null;
+    const cancel = h("button", { class: "small", hidden: true, onclick: () => ctrl?.abort() }, "Cancel");
+    const go = h("button", { class: "primary big wide" }, "🎬 Make my video");
+    go.addEventListener("click", async () => {
+      this.pauseClip();
+      ctrl = new AbortController();
+      go.disabled = true;
+      cancel.hidden = false;
+      bar.hidden = false;
+      clear(out);
+      this.status("Making your video… keep this page open.");
+      try {
+        const { photos: _p, ...opts } = this.options();
+        void _p;
+        const { blob, type } = await makeClipVideo({
+          ...opts,
+          clip: c,
+          start: this.clipStart,
+          length: this.clipLen,
+          sound: this.clipSound,
+          track: this.clipTrack || meta.tracks[0],
+          quality: quality.value === "small" ? "small" : "high",
+          signal: ctrl.signal,
+          onProgress: (s, total) => (bar.value = total ? s / total : 0),
+        });
+        if (this.videoUrl) URL.revokeObjectURL(this.videoUrl);
+        this.videoUrl = URL.createObjectURL(blob);
+        const name = this.fileName("video", type.includes("mp4") ? "mp4" : "webm");
+        emit(this, "questpass:video", { blob, type, frame: this.frame, name, source: "clip" });
+        const canShare = typeof navigator !== "undefined" && "canShare" in navigator;
+        append(out, [
+          h("video", { class: "result", src: this.videoUrl, controls: true, playsInline: true }),
+          h(
+            "div",
+            { class: "row" },
+            h("button", { class: "primary", onclick: () => (download(blob, name), emit(this, "questpass:share", { kind: "video", method: "download" })) }, "⬇ Save video"),
+            canShare ? h("button", { onclick: async () => { if (await shareFile(blob, name, shareTextOf(this.cfg))) emit(this, "questpass:share", { kind: "video", method: "share" }); else download(blob, name); } }, "Share") : null,
+          ),
+        ]);
+        this.status("Your video is ready.");
+      } catch (e) {
+        const stopped = e instanceof DOMException && e.name === "AbortError";
+        this.status(stopped ? "Stopped." : e instanceof Error && e.message ? e.message : "Couldn't make the video.", !stopped);
+      } finally {
+        go.disabled = false;
+        cancel.hidden = true;
+        bar.hidden = true;
+      }
+    });
+    return h(
+      "div",
+      { class: "card" },
+      h("h3", null, "Your video"),
+      h("p", { class: "note" }, `${fmt(c.duration)} long. Up to ${CLIP_MAX_SEC}s plays inside the frame.`),
+      h("label", { class: "field" }, h("span", null, "Start at ", startOut), start),
+      h("label", { class: "field" }, h("span", null, "Length ", lenOut), len),
+      h("div", { class: "grid2" }, h("label", { class: "field" }, "Sound", sound), h("label", { class: "field" }, "Music", track)),
+      h("label", { class: "field" }, "Quality", quality),
+      go,
+      bar,
+      cancel,
+      out,
+      h("p", { class: "note" }, "Made on your phone; nothing is uploaded."),
+    );
+  }
+
   /* --------------------------------------------------------- the video */
 
+  /** The recap's photos (the shots) and clips, in the order they play; kept in step with the shots. */
+  private syncReel() {
+    this.reel = this.reel.filter((e) => e.kind === "clip" || this.shots.includes(e.shot));
+    for (const shot of this.shots) if (!this.reel.some((e) => e.kind === "photo" && e.shot === shot)) this.reel.push({ kind: "photo", shot });
+  }
+
+  private async addReelClips(files: FileList | null) {
+    for (const f of Array.from(files ?? []).slice(0, 6)) {
+      try {
+        const clip = await ClipSource.open(f);
+        const t = document.createElement("canvas");
+        const k = Math.min(1, 160 / Math.max(clip.canvas.width, clip.canvas.height));
+        t.width = Math.round(clip.canvas.width * k);
+        t.height = Math.round(clip.canvas.height * k);
+        t.getContext("2d")!.drawImage(clip.canvas, 0, 0, t.width, t.height);
+        this.reel.push({ kind: "clip", clip, start: 0, length: Math.min(REEL_CLIP_MAX_SEC, Math.max(1, Math.floor(clip.duration))), thumb: t.toDataURL("image/jpeg", 0.8) });
+      } catch (e) {
+        this.status(e instanceof Error ? e.message : "A video couldn't be opened.", true);
+      }
+    }
+    this.renderPanel();
+    const det = [...this.panel.querySelectorAll("details")].find((d) => d.textContent?.includes("Also make a video"));
+    if (det) det.open = true;
+  }
+
   private videoCard() {
+    this.syncReel();
     const list = h("div", { class: "order" });
     const draw = () => {
       clear(list);
-      this.shots.forEach((s, i) => {
+      let photo = 0;
+      let clipN = 0;
+      this.reel.forEach((e, i) => {
+        const label = e.kind === "photo" ? `Photo ${++photo}` : `🎥 Video ${++clipN}`;
+        const length =
+          e.kind === "clip"
+            ? (() => {
+                const sel = h("select", { "aria-label": `${label} length`, style: { width: "auto", minHeight: "36px", padding: "4px 8px" } });
+                for (const sec of [2, 3, 4, 6, 8, 10].filter((x) => x <= Math.max(2, Math.floor(e.clip.duration)))) sel.appendChild(h("option", { value: sec, selected: sec === e.length }, `${sec}s`));
+                sel.addEventListener("change", () => (e.length = Number(sel.value)));
+                return sel;
+              })()
+            : null;
         list.appendChild(
           h(
             "div",
             { class: "item" },
-            h("img", { src: s.thumb, alt: `Photo ${i + 1}` }),
-            h("span", null, `Photo ${i + 1}`),
+            h("img", { src: e.kind === "photo" ? e.shot.thumb : e.thumb, alt: label }),
+            h("span", { style: { display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" } }, label, length),
             h(
               "div",
               { class: "moves" },
-              h("button", { "aria-label": `Move photo ${i + 1} earlier`, disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
-              h("button", { "aria-label": `Move photo ${i + 1} later`, disabled: i === this.shots.length - 1, onclick: () => move(i, 1) }, "↓"),
+              h("button", { "aria-label": `Move ${label} earlier`, disabled: i === 0, onclick: () => move(i, -1) }, "↑"),
+              h("button", { "aria-label": `Move ${label} later`, disabled: i === this.reel.length - 1, onclick: () => move(i, 1) }, "↓"),
+              e.kind === "clip" ? h("button", { "aria-label": `Remove ${label}`, onclick: () => remove(i) }, "✕") : null,
             ),
           ),
         );
@@ -684,11 +991,24 @@ export class BoothElement extends HTMLElement {
     };
     const move = (i: number, d: number) => {
       const j = i + d;
-      [this.shots[i], this.shots[j]] = [this.shots[j]!, this.shots[i]!];
+      [this.reel[i], this.reel[j]] = [this.reel[j]!, this.reel[i]!];
+      // the photos keep the same order in the frame as in the video
+      this.shots = this.reel.filter((e): e is { kind: "photo"; shot: Shot } => e.kind === "photo").map((e) => e.shot);
       draw();
       void this.redraw();
     };
+    const remove = (i: number) => {
+      const [e] = this.reel.splice(i, 1);
+      if (e?.kind === "clip") e.clip.close();
+      draw();
+    };
     draw();
+    const addClips = h("input", { type: "file", accept: "video/*", multiple: true, style: { display: "none" } });
+    addClips.addEventListener("change", () => {
+      void this.addReelClips(addClips.files).then(() => (addClips.value = ""));
+    });
+    const clipSound = h("input", { type: "checkbox", checked: this.reelClipSound });
+    clipSound.addEventListener("change", () => (this.reelClipSound = clipSound.checked));
     const meta = frameMeta(this.frame);
     const track = h("select", { "aria-label": "Music" });
     for (const t of listTracks()) track.appendChild(h("option", { value: t.id, selected: t.id === meta.tracks[0] }, t.name));
@@ -709,8 +1029,10 @@ export class BoothElement extends HTMLElement {
       try {
         const { blob, type } = await makeVideo({
           ...this.options(),
-          // in the order shown (first = first in the video)
-          photos: this.shots.map((s) => s.image),
+          // in the order shown (first = first in the video): photos and clips
+          photos: [],
+          order: this.reel.map((e) => (e.kind === "photo" ? e.shot.image : { clip: e.clip, start: e.start, length: e.length })),
+          clipSound: this.reelClipSound,
           title: title.value,
           track: track.value,
           quality: quality.value === "small" ? "small" : "high",
@@ -747,8 +1069,9 @@ export class BoothElement extends HTMLElement {
       "details",
       { class: "card" },
       h("summary", null, "🎬 Also make a video"),
-      h("p", { class: "note" }, `Your photos in the ${meta.label} frame, cut to music. Made on your phone; nothing is uploaded.`),
+      h("p", { class: "note" }, `Your photos and video clips in the ${meta.label} frame, cut to music. Made on your phone; nothing is uploaded.`),
       list,
+      h("div", { class: "row" }, h("label", { class: "btn small" }, "＋ Add video clips", addClips), this.reel.some((e) => e.kind === "clip") ? h("label", { class: "check" }, clipSound, "Clips' own sound under the music") : null),
       h("label", { class: "field" }, "Line after the title", title),
       h("div", { class: "grid2" }, h("label", { class: "field" }, "Music", track), h("label", { class: "field" }, "Quality", quality)),
       go,

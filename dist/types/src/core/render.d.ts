@@ -6,6 +6,7 @@
 import { type FrameId } from "../engine/upstream/frames";
 import { type IntroSound } from "../engine/upstream/music";
 import { type Quality, type Ratio } from "../engine/upstream/reel";
+import type { ClipSource } from "./clip";
 import { type BoothConfig } from "./config";
 import { photosFor } from "./frames-meta";
 import { type Network } from "./handle";
@@ -62,6 +63,14 @@ export declare const listTracks: () => {
     name: string;
     bpm: number;
 }[];
+/** A video clip in the recap: which clip, from where, for how long. */
+export interface ClipItem {
+    clip: ClipSource;
+    start?: number;
+    length?: number;
+}
+/** The longest a clip plays inside the recap video (seconds). */
+export declare const REEL_CLIP_MAX_SEC = 10;
 export interface VideoOptions extends FrameOptions {
     /** the line under the title on the opening card */
     title?: string;
@@ -70,6 +79,12 @@ export interface VideoOptions extends FrameOptions {
     intro?: IntroSound;
     /** each photo's own caption, in the same order as `photos` */
     captions?: string[];
+    /** video clips to mix in with the photos (each up to REEL_CLIP_MAX_SEC) */
+    clips?: ClipItem[];
+    /** photos and clips in the order they play (default: the photos, then the clips) */
+    order?: Array<PhotoSource | ClipItem>;
+    /** the clips' own sound under the music (default true; the music goes softer) */
+    clipSound?: boolean;
     /** "music": cuts follow the track; "fast": twice as quick */
     timing?: "music" | "fast";
     quality?: Quality;

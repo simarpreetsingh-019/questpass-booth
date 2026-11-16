@@ -130,6 +130,12 @@ export interface ReelInput extends ContentInput {
     brand?: FrameBrand;
     /** words for the frames' text spaces (see FrameCtx.words) */
     words?: Record<string, string>;
+    /** video clips among the photos: brings each clip's picture to time `t` before that frame is drawn */
+    beforeFrame?: (t: number) => Promise<void> | void;
+    /** more sound under the video (the clips' own), scheduled from audio time `start` into `out` */
+    extraSound?: (ctx: BaseAudioContext, out: AudioNode, start: number) => Promise<void> | void;
+    /** the music's volume (0–1, default 1): lower when clips bring their own sound */
+    musicVolume?: number;
 }
 export interface ReelStats {
     /** passes pinned on the site */

@@ -3,7 +3,7 @@
 A branded photo booth and video maker for any event, that runs on the phone.
 
 - **31 photo frames**: polaroid, photo strip, newspaper, neon sign, boarding pass, magazine cover, festive prints with diyas, a prints collage and more, in Story, Post, Square and Wide sizes.
-- **Videos with music**: the photos cut to the beat, as an MP4 ready for Instagram, X and WhatsApp. The music is generated on the phone, so there's nothing to license.
+- **Videos with music**: photos and video clips cut to the beat, or a single clip playing inside any frame, as an MP4 ready for Instagram, X and WhatsApp. The music is generated on the phone, so there's nothing to license.
 - **Your brand on everything**: logo, colours, title, place and date, and your own words in each frame's text spaces.
 - **Set up in a minute**: type a website and the editor fills in the brand's name, logo and colours. Check them, adjust, done.
 - **Pizza pack**: six frames for pizza parties (a pizza box, a Bitcoin Pizza Day receipt, a Pizza Mafia wanted poster, a Rare Pizza NFT card, a whole pizza, a pizzeria table) and a ready Pizza DAO theme, with mafia names.

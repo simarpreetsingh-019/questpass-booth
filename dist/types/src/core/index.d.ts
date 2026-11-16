@@ -12,8 +12,9 @@ export { listFrames, registerFrame, TOP_PICKS, type FrameMeta, type CustomFrameM
 export { registerPizzaPack, PIZZA_PACK } from "../packs/pizza";
 /** The drawing types and helpers a custom frame needs (see src/packs/pizza.ts). */
 export type { FrameDef, FrameCtx, Palette, Rect } from "../engine/upstream/frames";
-export { drawPreview, createPreviewer, renderPhoto, makeVideo, listTracks, framePalettes, toBitmap, photosFor, RATIO_SIZES, type FrameOptions, type VideoOptions, type PhotoSource, type PaletteChoice, type FrameId, type Ratio } from "./render";
+export { drawPreview, createPreviewer, renderPhoto, makeVideo, REEL_CLIP_MAX_SEC, type ClipItem, listTracks, framePalettes, toBitmap, photosFor, RATIO_SIZES, type FrameOptions, type VideoOptions, type PhotoSource, type PaletteChoice, type FrameId, type Ratio } from "./render";
 export { colorsFromImage, CREDIT_LINE } from "./brand";
+export { ClipSource, makeClipVideo, CLIP_MAX_SEC, type ClipVideoOptions, type ClipSound } from "./clip";
 export { setFontsBase } from "./fonts";
 export { samplePhotos } from "./samples";
 export { BoothElement, EditorElement, defineElements } from "../ui/elements";

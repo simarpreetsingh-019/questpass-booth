@@ -1,4 +1,4 @@
-/*! QuestPass Booth 1.2.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
+/*! QuestPass Booth 1.3.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
 
 // src/shims/sponsors.ts
 var DEFAULT_THEME = {
@@ -3606,7 +3606,7 @@ function registerFestiveFrames() {
 registerFestiveFrames();
 
 // src/core/version.ts
-var VERSION = "1.2.0";
+var VERSION = "1.3.0";
 export {
   CONFIG_VERSION,
   PIZZA_PACK,

@@ -1,0 +1,63 @@
+--- a/src/engine/upstream/reel.ts	2026-11-16 07:04:55
++++ b/src/engine/upstream/reel.ts	2026-11-16 07:04:55
+@@ -159,6 +159,12 @@
+   brand?: FrameBrand;
+   /** words for the frames' text spaces (see FrameCtx.words) */
+   words?: Record<string, string>;
++  /** video clips among the photos: brings each clip's picture to time `t` before that frame is drawn */
++  beforeFrame?: (t: number) => Promise<void> | void;
++  /** more sound under the video (the clips' own), scheduled from audio time `start` into `out` */
++  extraSound?: (ctx: BaseAudioContext, out: AudioNode, start: number) => Promise<void> | void;
++  /** the music's volume (0–1, default 1): lower when clips bring their own sound */
++  musicVolume?: number;
+ }
+ 
+ export interface ReelStats {
+@@ -1091,7 +1097,11 @@
+ 
+   // the sound, rendered at once (it's all made in code, so no need to play it)
+   const off = new OfflineAudioContext(2, Math.ceil(sampleRate * r.total), sampleRate);
+-  scheduleSound(off, off.destination, input.track, 0, r.total, r.cuts, input.intro, input.frame);
++  const music = off.createGain();
++  music.gain.value = input.musicVolume ?? 1;
++  music.connect(off.destination);
++  scheduleSound(off, music, input.track, 0, r.total, r.cuts, input.intro, input.frame);
++  await input.extraSound?.(off, off.destination, 0);
+   const sound = await off.startRendering();
+ 
+   const { Muxer, ArrayBufferTarget } = await import("mp4-muxer");
+@@ -1122,6 +1132,7 @@
+       if (signal?.aborted) throw new DOMException("cancelled", "AbortError");
+       if (failed) throw failed;
+       const t = i / FPS;
++      await input.beforeFrame?.(t);
+       r.draw(ctx, t);
+       const frame = new VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / FPS), duration: Math.round(1e6 / FPS) });
+       venc.encode(frame, { keyFrame: i % (FPS * 2) === 0 });
+@@ -1168,6 +1179,7 @@
+   const r = await buildReel(input);
+   [canvas.width, canvas.height] = r.size;
+   const ctx = canvas.getContext("2d")!;
++  await input.beforeFrame?.(0);
+   r.draw(ctx, 0);
+ 
+   const audio = new AudioContext();
+@@ -1192,12 +1204,17 @@
+   }
+ 
+   const t0 = audio.currentTime + 0.15;
+-  scheduleSound(audio, dest, input.track, t0, r.total, r.cuts, input.intro, input.frame);
++  const music = audio.createGain();
++  music.gain.value = input.musicVolume ?? 1;
++  music.connect(dest);
++  scheduleSound(audio, music, input.track, t0, r.total, r.cuts, input.intro, input.frame);
++  await input.extraSound?.(audio, dest, t0);
+   rec.start(500);
+   await new Promise<void>((res, rej) => {
+     const tick = () => {
+       if (signal?.aborted) return rej(new DOMException("cancelled", "AbortError"));
+       const t = Math.max(0, audio.currentTime - t0);
++      void input.beforeFrame?.(Math.min(t, r.total));
+       r.draw(ctx, Math.min(t, r.total));
+       onProgress(Math.min(t, r.total), r.total);
+       if (t >= r.total + 0.1) return res();

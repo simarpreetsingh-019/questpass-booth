@@ -6,7 +6,8 @@
 import { FRAMES, paletteFromAccent, paletteFromPhoto, type FrameId, type Palette } from "../engine/upstream/frames";
 import { resolveWords } from "../engine/upstream/frame-words";
 import { TRACKS, type IntroSound, type Track } from "../engine/upstream/music";
-import { MAX_ITEMS, RATIOS, framePalette, previewFrame, recordReel, type Quality, type Ratio, type ReelInput, type ReelItem } from "../engine/upstream/reel";
+import { MAX_ITEMS, RATIOS, framePalette, planReel, previewFrame, recordReel, reelWindow, stepSec, type Quality, type Ratio, type ReelInput, type ReelItem } from "../engine/upstream/reel";
+import type { ClipSource } from "./clip";
 import { normalizeConfig, offeredFrames, type BoothConfig } from "./config";
 import { personOf, prepare } from "./brand";
 import { frameMeta, ownColors, photosFor } from "./frames-meta";
@@ -133,6 +134,16 @@ export async function renderPhoto(o: FrameOptions & { hd?: boolean; type?: "imag
 export const listTracks = () => TRACKS.map((t) => ({ id: t.id, name: t.name, bpm: t.bpm }));
 const trackOf = (id: string | undefined): Track => TRACKS.find((t) => t.id === id) ?? TRACKS[0]!;
 
+/** A video clip in the recap: which clip, from where, for how long. */
+export interface ClipItem {
+  clip: ClipSource;
+  start?: number;
+  length?: number;
+}
+/** The longest a clip plays inside the recap video (seconds). */
+export const REEL_CLIP_MAX_SEC = 10;
+const isClipItem = (p: unknown): p is ClipItem => typeof p === "object" && p !== null && "clip" in p;
+
 export interface VideoOptions extends FrameOptions {
   /** the line under the title on the opening card */
   title?: string;
@@ -141,6 +152,12 @@ export interface VideoOptions extends FrameOptions {
   intro?: IntroSound;
   /** each photo's own caption, in the same order as `photos` */
   captions?: string[];
+  /** video clips to mix in with the photos (each up to REEL_CLIP_MAX_SEC) */
+  clips?: ClipItem[];
+  /** photos and clips in the order they play (default: the photos, then the clips) */
+  order?: Array<PhotoSource | ClipItem>;
+  /** the clips' own sound under the music (default true; the music goes softer) */
+  clipSound?: boolean;
   /** "music": cuts follow the track; "fast": twice as quick */
   timing?: "music" | "fast";
   quality?: Quality;
@@ -153,25 +170,72 @@ export interface VideoOptions extends FrameOptions {
  * can encode one, else WebM recorded in real time. About 15–40 s.
  */
 export async function makeVideo(o: VideoOptions): Promise<{ blob: Blob; type: string }> {
-  if (!o.photos.length) throw new Error("Add at least one photo.");
+  const entries = o.order ?? [...o.photos, ...(o.clips ?? [])];
+  if (!entries.length) throw new Error("Add at least one photo or video.");
   const s = await stillOptions({ ...o, photos: [] });
   const meta = frameMeta(s.frame);
+  const track = trackOf(o.track ?? meta.tracks[0]);
   const items: ReelItem[] = [];
-  for (const [i, p] of o.photos.slice(0, MAX_ITEMS).entries()) {
+  const clips: Array<{ item: ReelItem; clip: ClipSource; start: number; length: number }> = [];
+  for (const [i, p] of entries.slice(0, MAX_ITEMS).entries()) {
+    const text = (o.captions?.[i] ?? "").slice(0, 60);
+    if (isClipItem(p)) {
+      // a clip: its picture is a canvas that moves with the video (see beforeFrame), on screen for its own length
+      const start = Math.max(0, Math.min(p.start ?? 0, p.clip.duration - 0.5));
+      const length = Math.max(1, Math.min(p.length ?? 4, REEL_CLIP_MAX_SEC, p.clip.duration - start));
+      await p.clip.frameAt(start);
+      const image = p.clip.canvas as unknown as ImageBitmap;
+      const item: ReelItem = { id: `clip${i}`, image, beats: 4, text, fit: "auto", motion: "still", amount: 0, focus: { x: 0.5, y: 0.5 }, hold: Math.max(4, Math.round(length / stepSec(track))) };
+      clips.push({ item, clip: p.clip, start, length });
+      items.push(item);
+      continue;
+    }
     const image = await toBitmap(p, 1920);
-    items.push({ id: String(i), image, beats: 4, text: (o.captions?.[i] ?? "").slice(0, 60), fit: "auto", motion: "in", amount: 0.12, focus: { x: 0.5, y: image.height > image.width * 1.1 ? 0.35 : 0.5 } });
+    items.push({ id: String(i), image, beats: 4, text, fit: "auto", motion: "in", amount: 0.12, focus: { x: 0.5, y: image.height > image.width * 1.1 ? 0.35 : 0.5 } });
   }
   const ready = await prepare(s.cfg);
   const input: ReelInput = {
     ...s.draw,
     items,
     palette: paletteOf(s.cfg, s.frame, o.palette ?? "brand", items[0]?.image),
-    track: trackOf(o.track ?? meta.tracks[0]),
+    track,
     intro: o.intro ?? meta.intro,
     timing: o.timing ?? "music",
     caption: (o.title ?? "").slice(0, 50),
     open: ready.open,
   };
+  if (clips.length) {
+    // when each clip plays (the same plan the video is drawn from)
+    const R = reelWindow(input);
+    const plan = planReel(input, R.w / R.h);
+    const when = clips.map((c) => ({ ...c, seg: plan.segments.find((g) => g.item === c.item || g.pair === c.item) }));
+    input.beforeFrame = async (t) => {
+      for (const c of when) {
+        if (!c.seg || t < c.seg.start - 0.05 || t > c.seg.end) continue;
+        await c.clip.frameAt(c.start + Math.min(Math.max(0, t - c.seg.start), c.length - 0.04));
+      }
+    };
+    if (o.clipSound !== false) {
+      input.musicVolume = 0.4;
+      input.extraSound = async (ctx, out, at) => {
+        const g = ctx.createGain();
+        g.gain.value = 0.9;
+        g.connect(out);
+        for (const c of when) {
+          if (!c.seg) continue;
+          try {
+            const buf = await ctx.decodeAudioData(await c.clip.blob.arrayBuffer());
+            const src = ctx.createBufferSource();
+            src.buffer = buf;
+            src.connect(g);
+            src.start(at + c.seg.start, c.start, Math.min(c.length, c.seg.end - c.seg.start));
+          } catch {
+            // a clip without sound
+          }
+        }
+      };
+    }
+  }
   const canvas = document.createElement("canvas");
   return recordReel(input, canvas, o.onProgress ?? (() => undefined), o.signal, o.quality ?? "high");
 }
