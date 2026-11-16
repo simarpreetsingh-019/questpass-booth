@@ -46,6 +46,8 @@ const LOOKS: Record<FrameId, Omit<FrameMeta, "id" | "label" | "group" | "photos"
   calendar: { best: "Day by day", ratio: "9:16", intro: "chime", tracks: ["drive", "house", "happy"] },
   player: { best: "Your day as a song", ratio: "9:16", intro: "vinyl", tracks: ["glow", "happy", "sunset"] },
   clean: { best: "Anything: lets the photos talk", ratio: "9:16", intro: "takeoff", tracks: ["drive", "happy", "glow"] },
+  "festive-prints": { best: "Family, friends, festive evenings", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "dhol"] },
+  "prints-collage": { best: "Two or three photos as prints, no decorations", ratio: "4:5", intro: "vinyl", tracks: ["chai", "sunset", "happy"] },
 };
 
 /** A group's name in the picker ("Pizza" → "Pizza frames"). */
@@ -85,7 +87,9 @@ export function registerFrame(id: string, def: FrameDef, meta: CustomFrameMeta) 
 }
 
 /** Frames that keep their own colours under the brand's. */
-export const ownColors = (id: FrameId) => custom.get(id)?.ownColors === true;
+export const ownColors = (id: FrameId) => custom.get(id)?.ownColors === true || OWN_COLORS.has(id);
+/** Built-in frames whose look is their colours (paper prints). */
+const OWN_COLORS = new Set<string>(["festive-prints", "prints-collage"]);
 
 /** How many photos a frame shows at this size. */
 export const photosFor = (id: FrameId, ratio: Ratio) => custom.get(id)?.photos ?? (id === "booth" ? 4 : id === "dump" ? (ratio === "16:9" ? 6 : 8) : 1);

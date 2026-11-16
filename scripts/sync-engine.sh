@@ -8,6 +8,7 @@ SRC="${1:-../mumbai-passport}"
 DEST="$(cd "$(dirname "$0")/.." && pwd)/src/engine/upstream"
 for f in \
   src/features/reel/engine/frames.ts \
+  src/features/reel/engine/frames-prints.ts \
   src/features/reel/engine/reel.ts \
   src/features/reel/engine/music.ts \
   src/features/recap/engine/draw-kit.ts \

@@ -1,4 +1,4 @@
-/*! QuestPass Booth 1.3.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
+/*! QuestPass Booth 1.3.1 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
 
 // server/net.ts
 import { lookup as dnsLookup } from "node:dns";

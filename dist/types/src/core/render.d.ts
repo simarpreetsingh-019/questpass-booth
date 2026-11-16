@@ -107,7 +107,7 @@ export { photosFor };
  * can be ImageBitmaps or canvases (a camera frame).
  */
 export declare function createPreviewer(o: Omit<FrameOptions, "photos">): Promise<{
-    frame: "clean" | "newspaper" | "pass" | "passport" | "ticket" | "polaroid" | "film" | "cinema" | "vhs" | "postcard" | "scrapbook" | "magazine" | "calendar" | "player" | "tablet" | "code" | "lanyard" | "gamecard" | "booth" | "dump" | "story" | "comic" | "neon";
+    frame: "clean" | "newspaper" | "pass" | "passport" | "ticket" | "polaroid" | "film" | "cinema" | "vhs" | "postcard" | "scrapbook" | "magazine" | "calendar" | "player" | "tablet" | "code" | "lanyard" | "gamecard" | "booth" | "dump" | "story" | "comic" | "neon" | "festive-prints" | "prints-collage";
     ratio: Ratio;
     config: BoothConfig;
     draw(canvas: HTMLCanvasElement, width: number, photos: Array<ImageBitmap | HTMLCanvasElement>): void;

@@ -1,4 +1,4 @@
-/*! QuestPass Booth 1.3.0 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
+/*! QuestPass Booth 1.3.1 | Apache-2.0 | (c) Simarpreet Singh | https://github.com/simarpreetsingh-019/questpass-booth */
 
 // src/shims/sponsors.ts
 var DEFAULT_THEME = {
@@ -156,10 +156,275 @@ function wrap(ctx, s, maxW, lines = 2) {
 var wholeNames = false;
 var firstName = (n) => wholeNames ? n.trim() : n.trim().split(/\s+/)[0] ?? n;
 
+// src/engine/upstream/frames-prints.ts
+var CREDIT = "made by @simarpreet_019";
+function withA(c, a) {
+  const m = /^#([0-9a-f]{6})$/i.exec(c.trim());
+  if (!m) return c;
+  const v = parseInt(m[1], 16);
+  return `rgba(${v >> 16 & 255},${v >> 8 & 255},${v & 255},${a})`;
+}
+var P = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
+var wide = (W, H) => W > 1.3 * H;
+var TILT = -0.03;
+var SERIF = (px) => `italic 700 ${px}px "Playfair Display", Georgia, serif`;
+var HAND = (px) => `700 ${px}px Caveat, "Comic Sans MS", cursive`;
+var MONO = (px) => F.mono(px, 600);
+var word = (f, id, fallback) => {
+  const w = f.words?.[id];
+  return w === void 0 ? fallback : w;
+};
+function say(ctx, s, x, y, maxW, px, font, color2, align = "center") {
+  if (!s) return;
+  let size = px;
+  ctx.font = font(size);
+  while (size > px * 0.5 && ctx.measureText(s).width > maxW) {
+    size *= 0.94;
+    ctx.font = font(size);
+  }
+  let out = s;
+  while (out.length > 1 && ctx.measureText(out).width > maxW) out = out.slice(0, -2) + "\u2026";
+  text(ctx, out, x, y, font(size), color2, align);
+}
+function backPrint(f) {
+  const { R, u, W, H } = f;
+  if (wide(W, H)) return { x: R.x + R.w * 0.5, y: R.y + 70 * u, w: R.w * 0.78, h: R.h * 0.85 };
+  return { x: R.x + 46 * u, y: R.y + R.h * 0.62, w: R.w - 30 * u, h: R.h * 0.9 };
+}
+function print(ctx, r, rot, u, border, photo) {
+  const pad = 16 * u;
+  ctx.save();
+  ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
+  ctx.rotate(rot);
+  ctx.shadowColor = "rgba(0,0,0,0.22)";
+  ctx.shadowBlur = 28 * u;
+  ctx.shadowOffsetY = 10 * u;
+  ctx.fillStyle = border;
+  ctx.fillRect(-r.w / 2 - pad, -r.h / 2 - pad, r.w + pad * 2, r.h + pad * 2);
+  ctx.shadowColor = "transparent";
+  if (photo) {
+    ctx.beginPath();
+    ctx.rect(-r.w / 2, -r.h / 2, r.w, r.h);
+    ctx.clip();
+    const k = Math.max(r.w / photo.width, r.h / photo.height);
+    ctx.drawImage(photo, -(photo.width * k) / 2, -(photo.height * k) / 2, photo.width * k, photo.height * k);
+  }
+  ctx.restore();
+}
+function diya(ctx, x, top, len, s, gold, flame) {
+  ctx.save();
+  ctx.strokeStyle = gold;
+  ctx.fillStyle = gold;
+  ctx.lineWidth = 2.4 * s;
+  ctx.lineCap = "round";
+  const link = 14 * s;
+  for (let y2 = top; y2 < top + len - link; y2 += link) {
+    ctx.beginPath();
+    ctx.ellipse(x, y2 + link / 2, 3.2 * s, link / 2 - 1 * s, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  const mid = top + len * 0.55;
+  ctx.beginPath();
+  ctx.arc(x, mid, 7 * s, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(x - 12 * s, mid + 26 * s);
+  ctx.quadraticCurveTo(x - 11 * s, mid + 6 * s, x, mid + 6 * s);
+  ctx.quadraticCurveTo(x + 11 * s, mid + 6 * s, x + 12 * s, mid + 26 * s);
+  ctx.closePath();
+  ctx.stroke();
+  const y = top + len;
+  const bw = 46 * s;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 30 * s);
+  ctx.lineTo(x - bw * 0.8, y);
+  ctx.moveTo(x, y - 30 * s);
+  ctx.lineTo(x + bw * 0.8, y);
+  ctx.moveTo(x, y - 30 * s);
+  ctx.lineTo(x, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(x, y, bw, 8 * s, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - bw, y);
+  ctx.quadraticCurveTo(x, y + 46 * s, x + bw, y);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x - bw * 0.35, y + 26 * s);
+  ctx.lineTo(x - bw * 0.25, y + 40 * s);
+  ctx.lineTo(x + bw * 0.25, y + 40 * s);
+  ctx.lineTo(x + bw * 0.35, y + 26 * s);
+  ctx.stroke();
+  const g = ctx.createRadialGradient(x, y - 14 * s, 0, x, y - 14 * s, 60 * s);
+  g.addColorStop(0, withA(flame, 0.45));
+  g.addColorStop(1, withA(flame, 0));
+  ctx.fillStyle = g;
+  ctx.fillRect(x - 60 * s, y - 74 * s, 120 * s, 120 * s);
+  ctx.fillStyle = flame;
+  ctx.beginPath();
+  ctx.moveTo(x, y - 30 * s);
+  ctx.bezierCurveTo(x + 10 * s, y - 16 * s, x + 9 * s, y - 4 * s, x, y - 2 * s);
+  ctx.bezierCurveTo(x - 9 * s, y - 4 * s, x - 10 * s, y - 16 * s, x, y - 30 * s);
+  ctx.fill();
+  ctx.restore();
+}
+function mandala(ctx, cx, cy, r, gold, s) {
+  ctx.save();
+  ctx.strokeStyle = gold;
+  ctx.fillStyle = gold;
+  ctx.lineWidth = 2 * s;
+  ctx.globalAlpha *= 0.7;
+  for (const [k, n, petal] of [[0.22, 8, 0.12], [0.42, 12, 0.14], [0.66, 16, 0.16], [0.9, 24, 0.12]]) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r * k, 0, Math.PI * 2);
+    ctx.stroke();
+    for (let i = 0; i < n; i++) {
+      const a = i / n * Math.PI * 2;
+      ctx.save();
+      ctx.translate(cx + Math.cos(a) * r * (k + petal * 0.55), cy + Math.sin(a) * r * (k + petal * 0.55));
+      ctx.rotate(a);
+      ctx.beginPath();
+      ctx.ellipse(0, 0, r * petal * 0.55, r * petal * 0.22, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+      ctx.beginPath();
+      ctx.arc(cx + Math.cos(a + Math.PI / n) * r * (k + petal), cy + Math.sin(a + Math.PI / n) * r * (k + petal), 2.6 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+  ctx.beginPath();
+  ctx.arc(cx, cy, r * 0.08, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+function collageGeo(W, H, u) {
+  const k = 0.72;
+  if (W >= H * 0.95 && !wide(W, H)) {
+    const w2 = (W - 120 * u) / 2.05;
+    const h2 = w2 * k;
+    const main2 = { x: 60 * u, y: 70 * u, w: w2, h: h2 };
+    const second2 = { x: main2.x + w2 * 0.6, y: main2.y + h2 * 0.45, w: w2, h: h2 };
+    const third2 = { x: main2.x + w2 * 1.2, y: main2.y + h2 * 0.9, w: w2, h: h2 };
+    const box2 = (bottom) => ({ x: 100 * u, y: bottom + 36 * u, w: W - 200 * u, h: H - bottom - 100 * u });
+    return { main: main2, second: second2, third: third2, text2: box2(second2.y + h2), text3: box2(third2.y + h2) };
+  }
+  if (W >= H * 0.95) {
+    const w2 = Math.min((W - 200 * u) / 2.6, (H - 330 * u) / (k * 1.3));
+    const h2 = w2 * k;
+    const x0 = (W - w2 * 2.6) / 2;
+    const main2 = { x: x0, y: 110 * u, w: w2, h: h2 };
+    const second2 = { x: x0 + w2 * 0.8, y: main2.y + h2 * 0.3, w: w2, h: h2 };
+    const third2 = { x: x0 + w2 * 1.6, y: main2.y + h2 * 0.05, w: w2, h: h2 };
+    const top = second2.y + h2 + 50 * u;
+    const text2 = { x: 100 * u, y: top, w: W - 200 * u, h: H - top - 70 * u };
+    return { main: main2, second: second2, third: third2, text2, text3: text2 };
+  }
+  const w = Math.min(W * 0.72, (H - 360 * u) / (k * 2.6));
+  const h = w * k;
+  const main = { x: 80 * u, y: (H / W >= 1.5 ? 150 : 90) * u, w, h };
+  const second = { x: W - 80 * u - w, y: main.y + h * 0.8, w, h };
+  const third = { x: 100 * u, y: second.y + h * 0.8, w, h };
+  const box = (top) => ({ x: 110 * u, y: top + 40 * u, w: W - 220 * u, h: H - top - 110 * u });
+  return { main, second, third, text2: box(second.y + h), text3: box(third.y + h) };
+}
+function printsFrame(o) {
+  const collage = !o.decorated;
+  return {
+    label: o.label,
+    group: o.group,
+    palettes: o.palettes,
+    window(W, H, u) {
+      if (collage) return collageGeo(W, H, u).main;
+      if (wide(W, H)) return { x: 120 * u, y: 150 * u, w: W * 0.5, h: H * 0.56 };
+      const t = H / W;
+      const w = W - (t >= 1.5 ? 200 : 240) * u;
+      const h = t >= 1.5 ? w * (collage ? 0.72 : 0.8) : t >= 1.2 ? w * 0.6 : w * 0.52;
+      return { x: (W - w) / 2 - 10 * u, y: (t >= 1.5 ? collage ? 200 : 250 : t >= 1.2 ? 170 : 120) * u, w, h };
+    },
+    tilt: TILT,
+    ownsText: true,
+    marks: ["tl", "tr"],
+    back(ctx, f) {
+      const { W, H, u, R, pal } = f;
+      ctx.fillStyle = pal.bg;
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = withA(pal.ink, 0.025);
+      for (let i = 0; i < 1600; i++) ctx.fillRect(i * 7919 % W, i * 104729 % H, 2 * u, 2 * u);
+      if (o.decorated) mandala(ctx, W * 0.04, H * (wide(W, H) ? 0.92 : 0.9), Math.min(W, H) * 0.34, pal.accent, u);
+      const photos = f.photos ?? [];
+      if (collage) {
+        const g = collageGeo(W, H, u);
+        if (photos[2]) print(ctx, g.third, -0.02, u, pal.paper, photos[2]);
+        print(ctx, g.second, 0.025, u, pal.paper, photos[1] ?? photos[0]);
+      } else {
+        print(ctx, backPrint(f), 0.012, u, pal.paper, photos[1] ?? photos[0]);
+      }
+      print(ctx, R, TILT, u, pal.paper);
+    },
+    front(ctx, f) {
+      const { W, H, u, R, pal } = f;
+      const tall = H / W >= 1.5;
+      if (o.decorated) {
+        const s = Math.min(W, H) / 1080;
+        const lamps = wide(W, H) ? [[60, 220], [150, 360], [240, 150]] : tall ? [[70, 300], [165, 500], [260, 210]] : [[70, 260], [160, 420], [250, 180]];
+        for (const [x, len] of lamps) diya(ctx, x * s, -10 * s, len * s, s, pal.accent, pal.accent2);
+      }
+      const back = backPrint(f);
+      const g = collage ? collageGeo(W, H, u) : null;
+      const below = g ? (f.photos ?? []).length >= 3 ? g.text3 : g.text2 : wide(W, H) ? { x: R.x + R.w * 0.62, y: back.y + back.h + 40 * u, w: W - R.x - R.w * 0.62 - 90 * u, h: H - back.y - back.h - 80 * u } : { x: 120 * u, y: back.y + back.h + 40 * u, w: W - 240 * u, h: H - back.y - back.h - 90 * u };
+      const title = word(f, `${o.id}.title`, f.eventName);
+      const name = f.journey.name.trim();
+      const line = (f.text ?? "").trim() || word(f, `${o.id}.note`, "");
+      const place = [f.brand?.place, f.eventDates].filter(Boolean).join(" \xB7 ").toUpperCase();
+      const lines = [
+        [title, 64, SERIF, pal.fg],
+        [name, 62, HAND, pal.ink],
+        [line, 44, HAND, withA(pal.ink, 0.85)],
+        [place, 22, MONO, pal.accent]
+      ].filter(([s]) => s);
+      const big = tall ? 1.45 : 1;
+      for (const l of lines) l[1] *= big;
+      const total = lines.reduce((t, [, px]) => t + px * 1.3 * u, 0);
+      const k = below.h > 0 ? Math.min(1, below.h / total) : 0.5;
+      let y = below.y + Math.max(0, (below.h - total * k) / 2);
+      for (const [s2, px, font, color2] of lines) {
+        y += px * 0.65 * u * k;
+        say(ctx, s2, below.x + below.w / 2, y, below.w, px * u * k, font, color2);
+        y += px * 0.65 * u * k;
+      }
+      text(ctx, f.brand?.credit || CREDIT, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
+    }
+  };
+}
+var festivePrints = printsFrame({
+  id: "festive-prints",
+  label: "\u{1FA94} Festive prints",
+  group: "Festive",
+  decorated: true,
+  palettes: () => [
+    P("Cream & gold", "#ECE8E1", "#5A3E2B", "#8C7A6B", "#FFFFFF", "#4A3527", "#C9973C", "#E8892B"),
+    P("Maroon night", "#3B0E14", "#F6E7C8", "#C9A98A", "#FBF6EC", "#F6E7C8", "#D8A845", "#FF9D3D"),
+    P("Ivory & marigold", "#FBF4E4", "#7A2E12", "#A7826A", "#FFFFFF", "#5B2A12", "#D9902A", "#E8642B")
+  ]
+});
+var printsCollage = printsFrame({
+  id: "prints-collage",
+  label: "\u{1F5BC}\uFE0F Prints collage",
+  group: "Clean",
+  decorated: false,
+  palettes: () => [
+    P("Paper", "#ECE8E1", "#3A3530", "#8C847A", "#FFFFFF", "#3A3530", "#8C7A6B", "#C9973C"),
+    P("White", "#F7F7F5", "#222222", "#8A8A8A", "#FFFFFF", "#222222", "#555555", "#999999"),
+    P("Black", "#111111", "#F2F2F2", "#9A9A9A", "#FAFAFA", "#F2F2F2", "#BDBDBD", "#888888"),
+    P("Kraft", "#C9A27A", "#2E2117", "#6E5440", "#FBF7F0", "#2E2117", "#5A3E2B", "#8C6A4A")
+  ]
+});
+
 // src/engine/upstream/frames.ts
 var easeOutK = (x) => 1 - Math.pow(1 - x, 3);
 var MONTHS = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
-var P = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
+var P2 = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
 var hexRgb = (c) => {
   const m = /^#([0-9a-f]{6})$/i.exec(c.trim());
   if (!m) return null;
@@ -167,7 +432,7 @@ var hexRgb = (c) => {
   return [v >> 16 & 255, v >> 8 & 255, v & 255];
 };
 var rgbHex = (r, g, b) => `#${[r, g, b].map((x) => Math.round(clamp(x / 255) * 255).toString(16).padStart(2, "0")).join("")}`;
-function withA(c, a) {
+function withA2(c, a) {
   const v = hexRgb(c);
   return v ? `rgba(${v[0]},${v[1]},${v[2]},${a})` : c;
 }
@@ -182,11 +447,11 @@ function lightness(c) {
   return v ? (0.2126 * v[0] + 0.7152 * v[1] + 0.0722 * v[2]) / 255 : 0.5;
 }
 var onColor = (c) => lightness(c) > 0.6 ? "#111111" : "#FFFFFF";
-var CREDIT = "made by @simarpreet_019";
+var CREDIT2 = "made by @simarpreet_019";
 var wordOf = (f, id) => f.words?.[id];
 var placeOf = (f) => f.brand ? f.brand.place : "Mumbai";
 var markOf = (f) => f.brand ? f.brand.mark : "QuestPass";
-var creditOf = (f) => f.brand ? f.brand.credit : CREDIT;
+var creditOf = (f) => f.brand ? f.brand.credit : CREDIT2;
 var signOf = (f) => [markOf(f).toUpperCase(), creditOf(f)].filter(Boolean).join(" \xB7 ");
 var code3 = (s) => s.replace(/[^A-Za-z]/g, "").slice(0, 3).toUpperCase() || "---";
 function routeFor(f, fromId = "pass.from") {
@@ -753,11 +1018,11 @@ var DEFS = {
     label: "\u2728 Clean",
     group: "Clean",
     palettes: () => [
-      P("Night", C.bg, C.white, C.grey, C.bg, C.white, C.neon, C.gold),
-      P("Paper", "#F4F1EA", "#141413", "#6B6A66", "#FFFFFF", "#141413", "#2F5FBF", "#C8102E"),
-      P("Marigold", "#1A1208", "#FFF6E5", "#B9A27A", "#2A1E10", "#FFF6E5", "#FFB020", "#FF6B3D"),
-      P("Ocean", "#06202B", "#E6F6FF", "#7FA6B8", "#0B2E3C", "#E6F6FF", "#3DD6D0", "#FFD166"),
-      P("Rose", "#2A0E1C", "#FFE9F2", "#C08AA3", "#3A1426", "#FFE9F2", "#FF7AB6", "#FFD166")
+      P2("Night", C.bg, C.white, C.grey, C.bg, C.white, C.neon, C.gold),
+      P2("Paper", "#F4F1EA", "#141413", "#6B6A66", "#FFFFFF", "#141413", "#2F5FBF", "#C8102E"),
+      P2("Marigold", "#1A1208", "#FFF6E5", "#B9A27A", "#2A1E10", "#FFF6E5", "#FFB020", "#FF6B3D"),
+      P2("Ocean", "#06202B", "#E6F6FF", "#7FA6B8", "#0B2E3C", "#E6F6FF", "#3DD6D0", "#FFD166"),
+      P2("Rose", "#2A0E1C", "#FFE9F2", "#C08AA3", "#3A1426", "#FFE9F2", "#FF7AB6", "#FFD166")
     ],
     window: banded(90, 90, 24),
     back(ctx, f) {
@@ -769,11 +1034,11 @@ var DEFS = {
     label: "\u{1F4F0} Newspaper",
     group: "Retro",
     palettes: () => [
-      P("Classic", "#F2ECDD", "#1B1916", "#5A564E", "#F2ECDD", "#1B1916", "#1B1916", "#1B1916"),
-      P("Pink paper", "#F4D8CB", "#1B1916", "#5A4A44", "#F4D8CB", "#1B1916", "#8A1C1C", "#1B1916"),
-      P("Night edition", "#141414", "#EDE8DC", "#9A958A", "#141414", "#EDE8DC", "#F2C94C", "#EDE8DC"),
-      P("Blueprint", "#E3ECF7", "#12305C", "#4A6080", "#E3ECF7", "#12305C", "#12305C", "#12305C"),
-      P("Mint", "#E2F0E6", "#173A2A", "#4E6B5D", "#E2F0E6", "#173A2A", "#1F6B45", "#173A2A")
+      P2("Classic", "#F2ECDD", "#1B1916", "#5A564E", "#F2ECDD", "#1B1916", "#1B1916", "#1B1916"),
+      P2("Pink paper", "#F4D8CB", "#1B1916", "#5A4A44", "#F4D8CB", "#1B1916", "#8A1C1C", "#1B1916"),
+      P2("Night edition", "#141414", "#EDE8DC", "#9A958A", "#141414", "#EDE8DC", "#F2C94C", "#EDE8DC"),
+      P2("Blueprint", "#E3ECF7", "#12305C", "#4A6080", "#E3ECF7", "#12305C", "#12305C", "#12305C"),
+      P2("Mint", "#E2F0E6", "#173A2A", "#4E6B5D", "#E2F0E6", "#173A2A", "#1F6B45", "#173A2A")
     ],
     // tall: room for a line of numbers between the headline and the photo
     window: (W, H, u) => capped(W > 1.3 * H ? 250 : 300, 130, 50, 1.5)(W, H, u),
@@ -818,7 +1083,7 @@ var DEFS = {
           yy += 34 * u;
           text(ctx, l.toUpperCase(), x0 + w / 2, yy, F.mono(14 * u, 600), ink);
           yy += 14 * u;
-          ctx.fillStyle = withA(ink, 0.25);
+          ctx.fillStyle = withA2(ink, 0.25);
           ctx.fillRect(x0 + w * 0.2, yy, w * 0.6, 1 * u);
           ctx.fillStyle = ink;
         }
@@ -828,7 +1093,7 @@ var DEFS = {
           ls.forEach((l, i) => text(ctx, l, x0, yy + 34 * u + i * 27 * u, F.sans(19 * u, 500), ink, "left"));
           yy += ls.length * 27 * u + 10 * u;
         }
-        ctx.fillStyle = withA(ink, 0.18);
+        ctx.fillStyle = withA2(ink, 0.18);
         for (let ly = yy + 30 * u, i = 0; ly < R.y + R.h; ly += 26 * u, i++) ctx.fillRect(x0, ly, w * (0.7 + 0.3 * (i * 0.37 % 1)), 9 * u);
         ctx.fillStyle = ink;
       };
@@ -877,10 +1142,10 @@ var DEFS = {
     label: "\u{1F3AB} Boarding pass",
     group: "Travel",
     palettes: () => [
-      P("Night flight", "#0B1424", C.gold, "#6B7280", "#F7F4EC", "#151923", C.neon, C.bg),
-      P("Sunset", "#2A1030", "#FFB38A", "#8A6F78", "#FFF6EE", "#2A1A22", "#FF7A59", "#FFFFFF"),
-      P("Emerald", "#06201A", "#9BE7C4", "#5E7268", "#F3F7F2", "#10261E", "#2BB673", "#FFFFFF"),
-      P("First class", "#14110A", "#F2C94C", "#7A6F55", "#FBF5E6", "#1E1A10", "#F2C94C", "#14110A")
+      P2("Night flight", "#0B1424", C.gold, "#6B7280", "#F7F4EC", "#151923", C.neon, C.bg),
+      P2("Sunset", "#2A1030", "#FFB38A", "#8A6F78", "#FFF6EE", "#2A1A22", "#FF7A59", "#FFFFFF"),
+      P2("Emerald", "#06201A", "#9BE7C4", "#5E7268", "#F3F7F2", "#10261E", "#2BB673", "#FFFFFF"),
+      P2("First class", "#14110A", "#F2C94C", "#7A6F55", "#FBF5E6", "#1E1A10", "#F2C94C", "#14110A")
     ],
     window: (W, H, u) => passLayout(W, H, u).R,
     marks: ["tr"],
@@ -938,7 +1203,7 @@ var DEFS = {
       if (b - a > 80 * u) {
         ctx.save();
         ctx.setLineDash([8 * u, 8 * u]);
-        ctx.strokeStyle = withA(ink, 0.35);
+        ctx.strokeStyle = withA2(ink, 0.35);
         ctx.lineWidth = 2.5 * u;
         ctx.beginPath();
         ctx.moveTo(a, ry);
@@ -953,12 +1218,12 @@ var DEFS = {
       if (!L.wide) {
         text(ctx, f.brand ? "NON-STOP" : `${j.km.toLocaleString()} KM`, (a + b) / 2, ry + 50 * u, F.mono(17 * u, 700), muted);
       }
-      ctx.strokeStyle = withA(ink, 0.18);
+      ctx.strokeStyle = withA2(ink, 0.18);
       ctx.lineWidth = 2 * u;
       ctx.strokeRect(L.R.x - 4 * u, L.R.y - 4 * u, L.R.w + 8 * u, L.R.h + 8 * u);
       ctx.save();
       ctx.setLineDash([12 * u, 10 * u]);
-      ctx.strokeStyle = withA(ink, 0.35);
+      ctx.strokeStyle = withA2(ink, 0.35);
       ctx.lineWidth = 2.5 * u;
       ctx.beginPath();
       if (L.wide) {
@@ -1034,10 +1299,10 @@ var DEFS = {
     label: "\u{1F6C2} Passport page",
     group: "Travel",
     palettes: () => [
-      P("Navy ink", "#EEF0E6", "#1F2A44", "#6A7085", "#EEF0E6", "#1F2A44", "#1F4E9C", "#2F6B5E"),
-      P("Red ink", "#F4EEE6", "#2A1C1A", "#7A6660", "#F4EEE6", "#2A1C1A", "#B3202A", "#8A5A2B"),
-      P("Green ink", "#EAF1E6", "#1A2A1E", "#5E7262", "#EAF1E6", "#1A2A1E", "#1F7A3A", "#2F5FBF"),
-      P("Purple ink", "#F1ECF4", "#241A2E", "#6E6078", "#F1ECF4", "#241A2E", "#6B2FA0", "#C0566B")
+      P2("Navy ink", "#EEF0E6", "#1F2A44", "#6A7085", "#EEF0E6", "#1F2A44", "#1F4E9C", "#2F6B5E"),
+      P2("Red ink", "#F4EEE6", "#2A1C1A", "#7A6660", "#F4EEE6", "#2A1C1A", "#B3202A", "#8A5A2B"),
+      P2("Green ink", "#EAF1E6", "#1A2A1E", "#5E7262", "#EAF1E6", "#1A2A1E", "#1F7A3A", "#2F5FBF"),
+      P2("Purple ink", "#F1ECF4", "#241A2E", "#6E6078", "#F1ECF4", "#241A2E", "#6B2FA0", "#C0566B")
     ],
     window: (W, H, u) => isWide(W, H) ? capped(200, 190, 60, 1.7)(W, H, u) : capped(330, 330, 90, 1.4)(W, H, u),
     marks: ["tr"],
@@ -1046,7 +1311,7 @@ var DEFS = {
       const { u, W, H, R } = f;
       const j = f.journey;
       fill(ctx, f, f.pal.paper);
-      ctx.strokeStyle = withA(f.pal.accent2, 0.13);
+      ctx.strokeStyle = withA2(f.pal.accent2, 0.13);
       ctx.lineWidth = 1.5 * u;
       for (let k = 0; k < 26; k++) {
         ctx.beginPath();
@@ -1080,7 +1345,7 @@ var DEFS = {
     },
     front(ctx, f) {
       const { u, R } = f;
-      ctx.strokeStyle = withA(f.pal.ink, 0.5);
+      ctx.strokeStyle = withA2(f.pal.ink, 0.5);
       ctx.lineWidth = 3 * u;
       ctx.strokeRect(R.x, R.y, R.w, R.h);
       const d = dayOf(f);
@@ -1110,10 +1375,10 @@ var DEFS = {
     label: "\u{1F686} Local train ticket",
     group: "Travel",
     palettes: () => [
-      P("Classic", "#1D2B22", "#F3E9C6", "#6F6650", "#F3E9C6", "#1C1A16", "#C8102E", "#1F4E9C"),
-      P("First class pink", "#3A1A28", "#F8D9E3", "#7A5163", "#F8D9E3", "#2B1420", "#B0305C", "#2E8B87"),
-      P("Metro blue", "#0E1A2B", "#DCE9F7", "#50647E", "#DCE9F7", "#10233D", "#0057B8", "#F2A33A"),
-      P("Mint", "#10261E", "#DDF0E4", "#4E6B5D", "#DDF0E4", "#122B20", "#1F7A3A", "#D9480F")
+      P2("Classic", "#1D2B22", "#F3E9C6", "#6F6650", "#F3E9C6", "#1C1A16", "#C8102E", "#1F4E9C"),
+      P2("First class pink", "#3A1A28", "#F8D9E3", "#7A5163", "#F8D9E3", "#2B1420", "#B0305C", "#2E8B87"),
+      P2("Metro blue", "#0E1A2B", "#DCE9F7", "#50647E", "#DCE9F7", "#10233D", "#0057B8", "#F2A33A"),
+      P2("Mint", "#10261E", "#DDF0E4", "#4E6B5D", "#DDF0E4", "#122B20", "#1F7A3A", "#D9480F")
     ],
     window: (W, H, u) => isWide(W, H) ? capped(190, 230, 80, 1.8)(W, H, u) : capped(330, 420, 90, 1.4)(W, H, u),
     marks: ["tr", "br"],
@@ -1158,7 +1423,7 @@ var DEFS = {
       const stops = f.brand ? [trt.fromCode, ...(own?.length ? own : ["PHOTOS", "SNACKS", "DANCING"]).slice(0, 3), trt.toCode] : [j.code, "STAGE", "CHAI", "SIDE QUESTS", "BOM"];
       const x0 = mx + 20 * u;
       const x1 = W - mx - 20 * u;
-      ctx.strokeStyle = withA(ink, 0.4);
+      ctx.strokeStyle = withA2(ink, 0.4);
       ctx.lineWidth = 6 * u;
       ctx.beginPath();
       ctx.moveTo(x0, ly);
@@ -1189,11 +1454,11 @@ var DEFS = {
     label: "\u{1F4F8} Polaroid",
     group: "Clean",
     palettes: () => [
-      P("Night", C.bg, C.neon, C.grey, "#FAF8F3", "#2A2622", C.gold, C.gold),
-      P("Cork board", "#A47B52", "#FFF8EC", "#F1DFC5", "#FAF8F3", "#2A2622", "#3A2414", "#3A2414"),
-      P("Blush", "#F4C9D6", "#5A1E33", "#8A5466", "#FFFDF9", "#3A2630", "#B0305C", "#B0305C"),
-      P("Mint", "#BFE6D5", "#123D2E", "#3F6B5B", "#FFFFFF", "#23302A", "#0E7A55", "#0E7A55"),
-      P("Black", "#0A0A0A", "#FFFFFF", "#9A9A9A", "#F5F5F2", "#111111", "#FF4F4F", "#FF4F4F")
+      P2("Night", C.bg, C.neon, C.grey, "#FAF8F3", "#2A2622", C.gold, C.gold),
+      P2("Cork board", "#A47B52", "#FFF8EC", "#F1DFC5", "#FAF8F3", "#2A2622", "#3A2414", "#3A2414"),
+      P2("Blush", "#F4C9D6", "#5A1E33", "#8A5466", "#FFFDF9", "#3A2630", "#B0305C", "#B0305C"),
+      P2("Mint", "#BFE6D5", "#123D2E", "#3F6B5B", "#FFFFFF", "#23302A", "#0E7A55", "#0E7A55"),
+      P2("Black", "#0A0A0A", "#FFFFFF", "#9A9A9A", "#F5F5F2", "#111111", "#FF4F4F", "#FF4F4F")
     ],
     window: capped(130, 250, 110, 1.4),
     tilt: -0.025,
@@ -1220,10 +1485,10 @@ var DEFS = {
     label: "\u{1F39E}\uFE0F Film strip",
     group: "Retro",
     palettes: () => [
-      P("Black", "#111111", "#EEEEEE", "#A6A6A6", "#EEEEEE", "#111111", C.gold, C.gold),
-      P("Sepia", "#2B1D12", "#F2E3C6", "#BFA88A", "#F2E3C6", "#2B1D12", "#E0A458", "#E0A458"),
-      P("Navy", "#0D1B2A", "#E0E6EE", "#94A3B8", "#E0E6EE", "#0D1B2A", "#7FB7FF", "#7FB7FF"),
-      P("Red", "#3A0D0D", "#F5E6E6", "#C9A0A0", "#F5E6E6", "#3A0D0D", "#FFC440", "#FFC440")
+      P2("Black", "#111111", "#EEEEEE", "#A6A6A6", "#EEEEEE", "#111111", C.gold, C.gold),
+      P2("Sepia", "#2B1D12", "#F2E3C6", "#BFA88A", "#F2E3C6", "#2B1D12", "#E0A458", "#E0A458"),
+      P2("Navy", "#0D1B2A", "#E0E6EE", "#94A3B8", "#E0E6EE", "#0D1B2A", "#7FB7FF", "#7FB7FF"),
+      P2("Red", "#3A0D0D", "#F5E6E6", "#C9A0A0", "#F5E6E6", "#3A0D0D", "#FFC440", "#FFC440")
     ],
     window: banded(100, 100, 90),
     back(ctx, f) {
@@ -1245,10 +1510,10 @@ var DEFS = {
     label: "\u{1F3AC} After-movie",
     group: "Retro",
     palettes: () => [
-      P("Black", "#000000", "#FFFFFF", "#9A9A9A", "#000000", "#FFFFFF", C.gold, C.gold),
-      P("Midnight", "#06101F", "#E8F0FF", "#8597B5", "#06101F", "#E8F0FF", "#7FB7FF", "#7FB7FF"),
-      P("Wine", "#1C0710", "#FFE8EF", "#B8899A", "#1C0710", "#FFE8EF", "#FF7AB6", "#FF7AB6"),
-      P("White", "#F5F3EE", "#111111", "#6B6A66", "#F5F3EE", "#111111", "#C8102E", "#C8102E")
+      P2("Black", "#000000", "#FFFFFF", "#9A9A9A", "#000000", "#FFFFFF", C.gold, C.gold),
+      P2("Midnight", "#06101F", "#E8F0FF", "#8597B5", "#06101F", "#E8F0FF", "#7FB7FF", "#7FB7FF"),
+      P2("Wine", "#1C0710", "#FFE8EF", "#B8899A", "#1C0710", "#FFE8EF", "#FF7AB6", "#FF7AB6"),
+      P2("White", "#F5F3EE", "#111111", "#6B6A66", "#F5F3EE", "#111111", "#C8102E", "#C8102E")
     ],
     window: banded(150, 150, 0),
     marks: ["tl", "tr", "bl"],
@@ -1275,10 +1540,10 @@ var DEFS = {
     label: "\u{1F4FC} VHS",
     group: "Retro",
     palettes: () => [
-      P("Red", "#000000", "#EEEEEE", "#A6A6A6", "#000000", "#EEEEEE", "#FF4F4F", "#FF3030"),
-      P("Green screen", "#000000", "#D8FFD0", "#7FAF7A", "#000000", "#D8FFD0", "#39FF14", "#39FF14"),
-      P("Blue screen", "#0033AA", "#FFFFFF", "#C9D6F5", "#0033AA", "#FFFFFF", "#FFE14D", "#FF3030"),
-      P("Purple", "#160A2A", "#F1E6FF", "#A794C4", "#160A2A", "#F1E6FF", "#C77DFF", "#FF3030")
+      P2("Red", "#000000", "#EEEEEE", "#A6A6A6", "#000000", "#EEEEEE", "#FF4F4F", "#FF3030"),
+      P2("Green screen", "#000000", "#D8FFD0", "#7FAF7A", "#000000", "#D8FFD0", "#39FF14", "#39FF14"),
+      P2("Blue screen", "#0033AA", "#FFFFFF", "#C9D6F5", "#0033AA", "#FFFFFF", "#FFE14D", "#FF3030"),
+      P2("Purple", "#160A2A", "#F1E6FF", "#A794C4", "#160A2A", "#F1E6FF", "#C77DFF", "#FF3030")
     ],
     window: banded(70, 70, 0),
     marks: ["br"],
@@ -1309,10 +1574,10 @@ var DEFS = {
     label: "\u{1F48C} Postcard",
     group: "Retro",
     palettes: () => [
-      P("Airmail", "#E9DFC9", "#3A3226", "#5A5040", "#FFFDF7", "#3A3226", "#C8102E", "#1F4E9C"),
-      P("Sky", "#CFE3F2", "#1E3346", "#4A6378", "#FFFFFF", "#1E3346", "#1F6FB2", "#F2A33A"),
-      P("Blush", "#F3D4D8", "#43262C", "#7A5560", "#FFFBFA", "#43262C", "#D94F70", "#2E8B87"),
-      P("Night", "#1B2233", "#F2EDE3", "#A9B0C0", "#FFFDF7", "#2B2B33", "#FF6B6B", "#6FA8FF")
+      P2("Airmail", "#E9DFC9", "#3A3226", "#5A5040", "#FFFDF7", "#3A3226", "#C8102E", "#1F4E9C"),
+      P2("Sky", "#CFE3F2", "#1E3346", "#4A6378", "#FFFFFF", "#1E3346", "#1F6FB2", "#F2A33A"),
+      P2("Blush", "#F3D4D8", "#43262C", "#7A5560", "#FFFBFA", "#43262C", "#D94F70", "#2E8B87"),
+      P2("Night", "#1B2233", "#F2EDE3", "#A9B0C0", "#FFFDF7", "#2B2B33", "#FF6B6B", "#6FA8FF")
     ],
     window: capped(200, 230, 70, 1.6),
     marks: ["bl", "br", "tl"],
@@ -1378,10 +1643,10 @@ var DEFS = {
     label: "\u{1F4D2} Scrapbook",
     group: "Retro",
     palettes: () => [
-      P("Kraft", "#F4E7D3", "#3A2E22", "#6A5A48", "#F4E7D3", "#5A78AA", "#B4552B", "#F0BE5A"),
-      P("Mint", "#E3F2EA", "#1F3A2E", "#4E6B5D", "#E3F2EA", "#4E8A75", "#2E8B57", "#F7A6B8"),
-      P("Lavender", "#ECE6F7", "#2E2440", "#6A5E80", "#ECE6F7", "#7A6AB0", "#7B4FC9", "#9FD8CB"),
-      P("Lemon", "#FFF6D6", "#3A3010", "#7A6A35", "#FFF6D6", "#C9A227", "#D9480F", "#74C0FC")
+      P2("Kraft", "#F4E7D3", "#3A2E22", "#6A5A48", "#F4E7D3", "#5A78AA", "#B4552B", "#F0BE5A"),
+      P2("Mint", "#E3F2EA", "#1F3A2E", "#4E6B5D", "#E3F2EA", "#4E8A75", "#2E8B57", "#F7A6B8"),
+      P2("Lavender", "#ECE6F7", "#2E2440", "#6A5E80", "#ECE6F7", "#7A6AB0", "#7B4FC9", "#9FD8CB"),
+      P2("Lemon", "#FFF6D6", "#3A3010", "#7A6A35", "#FFF6D6", "#C9A227", "#D9480F", "#74C0FC")
     ],
     window: capped(150, 200, 90, 1.5),
     tilt: 0.02,
@@ -1389,7 +1654,7 @@ var DEFS = {
     back(ctx, f) {
       const { u, R, W } = f;
       fill(ctx, f, f.pal.bg);
-      ctx.strokeStyle = withA(f.pal.ink, 0.18);
+      ctx.strokeStyle = withA2(f.pal.ink, 0.18);
       ctx.lineWidth = 2 * u;
       for (let y = 40 * u; y < f.H; y += 48 * u) {
         ctx.beginPath();
@@ -1409,7 +1674,7 @@ var DEFS = {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(a);
-        ctx.fillStyle = withA(f.pal.accent2, 0.8);
+        ctx.fillStyle = withA2(f.pal.accent2, 0.8);
         ctx.fillRect(-90 * u, -22 * u, 180 * u, 44 * u);
         ctx.restore();
       };
@@ -1421,10 +1686,10 @@ var DEFS = {
     label: "\u{1F4D6} Magazine cover",
     group: "Clean",
     palettes: () => [
-      P("Classic", "#000000", "#FFFFFF", "#CCCCCC", "#000000", "#FFFFFF", C.gold, C.gold),
-      P("Red masthead", "#000000", "#E3262E", "#CCCCCC", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"),
-      P("Yellow", "#000000", "#FFD400", "#CCCCCC", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"),
-      P("Pink", "#000000", "#FF6FB5", "#CCCCCC", "#000000", "#FFFFFF", "#FFE14D", "#FFE14D")
+      P2("Classic", "#000000", "#FFFFFF", "#CCCCCC", "#000000", "#FFFFFF", C.gold, C.gold),
+      P2("Red masthead", "#000000", "#E3262E", "#CCCCCC", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"),
+      P2("Yellow", "#000000", "#FFD400", "#CCCCCC", "#000000", "#FFFFFF", "#FFFFFF", "#FFFFFF"),
+      P2("Pink", "#000000", "#FF6FB5", "#CCCCCC", "#000000", "#FFFFFF", "#FFE14D", "#FFE14D")
     ],
     window: banded(0, 0, 0),
     // its own masthead and footer carry the branding
@@ -1467,11 +1732,11 @@ var DEFS = {
     label: "\u{1F4C5} Calendar page",
     group: "Clean",
     palettes: () => [
-      P("Red", "#2A2F38", "#FFFFFF", "#8A8A8A", "#FFFFFF", "#1A1A1A", "#E03A3A", "#E03A3A"),
-      P("Blue", "#1E2633", "#FFFFFF", "#8A8A8A", "#FFFFFF", "#1A1A1A", "#2F6FDB", "#2F6FDB"),
-      P("Green", "#1F2A24", "#FFFFFF", "#8A8A8A", "#FFFFFF", "#1A1A1A", "#1F9D55", "#1F9D55"),
-      P("Marigold", "#2E2416", "#FFFFFF", "#8A8A8A", "#FFFBF2", "#1A1A1A", "#F59E0B", "#F59E0B"),
-      P("Black", "#D9D6CF", "#111111", "#8A8A8A", "#FFFFFF", "#111111", "#111111", "#111111")
+      P2("Red", "#2A2F38", "#FFFFFF", "#8A8A8A", "#FFFFFF", "#1A1A1A", "#E03A3A", "#E03A3A"),
+      P2("Blue", "#1E2633", "#FFFFFF", "#8A8A8A", "#FFFFFF", "#1A1A1A", "#2F6FDB", "#2F6FDB"),
+      P2("Green", "#1F2A24", "#FFFFFF", "#8A8A8A", "#FFFFFF", "#1A1A1A", "#1F9D55", "#1F9D55"),
+      P2("Marigold", "#2E2416", "#FFFFFF", "#8A8A8A", "#FFFBF2", "#1A1A1A", "#F59E0B", "#F59E0B"),
+      P2("Black", "#D9D6CF", "#111111", "#8A8A8A", "#FFFFFF", "#111111", "#111111", "#111111")
     ],
     window: (W, H, u) => calLayout(W, H, u).R,
     marks: ["tr", "br"],
@@ -1531,10 +1796,10 @@ var DEFS = {
     label: "\u{1F3A7} Now playing",
     group: "Clean",
     palettes: () => [
-      P("Green", "#1E3A2B", "#FFFFFF", "#A7B3AC", "#0B0F0D", "#FFFFFF", "#1ED760", "#1ED760"),
-      P("Purple", "#3B1E5A", "#FFFFFF", "#B9A8CC", "#0E0A14", "#FFFFFF", "#C77DFF", "#C77DFF"),
-      P("Orange", "#6A2B12", "#FFFFFF", "#D2B3A6", "#140A06", "#FFFFFF", "#FF8A3D", "#FF8A3D"),
-      P("Light", "#F2F2F2", "#111111", "#666666", "#D6D6D6", "#111111", "#E03A3A", "#E03A3A")
+      P2("Green", "#1E3A2B", "#FFFFFF", "#A7B3AC", "#0B0F0D", "#FFFFFF", "#1ED760", "#1ED760"),
+      P2("Purple", "#3B1E5A", "#FFFFFF", "#B9A8CC", "#0E0A14", "#FFFFFF", "#C77DFF", "#C77DFF"),
+      P2("Orange", "#6A2B12", "#FFFFFF", "#D2B3A6", "#140A06", "#FFFFFF", "#FF8A3D", "#FF8A3D"),
+      P2("Light", "#F2F2F2", "#111111", "#666666", "#D6D6D6", "#111111", "#E03A3A", "#E03A3A")
     ],
     window: (W, H, u) => playerLayout(W, H, u).R,
     marks: ["tl", "tr"],
@@ -1567,7 +1832,7 @@ var DEFS = {
       text(ctx, "\u2665", info.x + info.w, y0 + 20 * u, F.sans(48 * u, 700), p.accent, "right");
       const by = y0 + 130 * u;
       const k = clamp(f.t / Math.max(1, f.total));
-      ctx.fillStyle = withA(p.fg, 0.25);
+      ctx.fillStyle = withA2(p.fg, 0.25);
       roundRect(ctx, { x: info.x, y: by - 4 * u, w: info.w, h: 8 * u }, 4 * u);
       ctx.fill();
       ctx.fillStyle = p.fg;
@@ -1602,10 +1867,10 @@ var DEFS = {
     label: "\u{1F4F1} Tablet",
     group: "For devs",
     palettes: () => [
-      P("Space grey", "#1E2A3A", "#E8EDF5", "#9AA6B6", "#16171B", "#5C6370", C.neon, C.neon),
-      P("Silver", "#DCE3EC", "#1B2330", "#5A6577", "#E9ECF0", "#A9B0BA", "#2F5FBF", "#2F5FBF"),
-      P("Rose gold", "#F3D9D2", "#4A2A28", "#8A625D", "#F6E3DD", "#C99A8E", "#C0566B", "#C0566B"),
-      P("Midnight green", "#0E2A24", "#E4F2EC", "#8FB0A5", "#13201C", "#4F6B62", "#4CD3A5", "#4CD3A5")
+      P2("Space grey", "#1E2A3A", "#E8EDF5", "#9AA6B6", "#16171B", "#5C6370", C.neon, C.neon),
+      P2("Silver", "#DCE3EC", "#1B2330", "#5A6577", "#E9ECF0", "#A9B0BA", "#2F5FBF", "#2F5FBF"),
+      P2("Rose gold", "#F3D9D2", "#4A2A28", "#8A625D", "#F6E3DD", "#C99A8E", "#C0566B", "#C0566B"),
+      P2("Midnight green", "#0E2A24", "#E4F2EC", "#8FB0A5", "#13201C", "#4F6B62", "#4CD3A5", "#4CD3A5")
     ],
     window: capped(170, 170, 90, 1.45),
     marks: ["bl", "br"],
@@ -1651,10 +1916,10 @@ var DEFS = {
     group: "For devs",
     // ink: plain code, fg: strings, accent2: keywords, muted: comments, accent: the status bar
     palettes: () => [
-      P("Dark", "#1E1E1E", "#CE9178", "#6A9955", "#252526", "#D4D4D4", "#007ACC", "#569CD6"),
-      P("Night purple", "#282A36", "#F1FA8C", "#6272A4", "#21222C", "#F8F8F2", "#BD93F9", "#FF79C6"),
-      P("Light", "#FDF6E3", "#2AA198", "#93A1A1", "#EEE8D5", "#586E75", "#268BD2", "#859900"),
-      P("Lime", "#272822", "#E6DB74", "#75715E", "#1E1F1C", "#F8F8F2", "#A6E22E", "#F92672")
+      P2("Dark", "#1E1E1E", "#CE9178", "#6A9955", "#252526", "#D4D4D4", "#007ACC", "#569CD6"),
+      P2("Night purple", "#282A36", "#F1FA8C", "#6272A4", "#21222C", "#F8F8F2", "#BD93F9", "#FF79C6"),
+      P2("Light", "#FDF6E3", "#2AA198", "#93A1A1", "#EEE8D5", "#586E75", "#268BD2", "#859900"),
+      P2("Lime", "#272822", "#E6DB74", "#75715E", "#1E1F1C", "#F8F8F2", "#A6E22E", "#F92672")
     ],
     window: codeWindow,
     marks: ["tr", "br"],
@@ -1689,7 +1954,7 @@ var DEFS = {
           n++;
           continue;
         }
-        text(ctx, String(n++), gw - 26 * u, y, F.mono(20 * u, 500), withA(p.ink, 0.35), "right");
+        text(ctx, String(n++), gw - 26 * u, y, F.mono(20 * u, 500), withA2(p.ink, 0.35), "right");
       }
       const kw = p.accent2;
       const s = p.fg;
@@ -1721,7 +1986,7 @@ var DEFS = {
       const on = onColor(p.accent);
       text(ctx, f.brand ? `\u2387 main  \u25CF  ${f.eventName || "snap"}` : `\u2387 main  \u25CF  ${f.eventName}  \xB7  ${j.km.toLocaleString()} km`, 30 * u, H - sb / 2, F.mono(18 * u, 700), on, "left");
       dim(ctx, f, () => text(ctx, creditOf(f), W - 30 * u, H - sb / 2, F.mono(17 * u, 600), on, "right"));
-      ctx.strokeStyle = withA(p.ink, 0.25);
+      ctx.strokeStyle = withA2(p.ink, 0.25);
       ctx.lineWidth = 2 * u;
       ctx.strokeRect(R.x - 3 * u, R.y - 3 * u, R.w + 6 * u, R.h + 6 * u);
     }
@@ -1730,11 +1995,11 @@ var DEFS = {
     label: "\u{1FAAA} Lanyard badge",
     group: "For devs",
     palettes: () => [
-      P("Blue strap", "#F4F4F1", "#111216", "#6B6F78", "#FFFFFF", "#111216", C.neon, C.neon),
-      P("Red strap", "#F4F1F0", "#111216", "#6B6F78", "#FFFFFF", "#111216", "#E03A3A", "#E03A3A"),
-      P("Green strap", "#F1F4F1", "#111216", "#6B6F78", "#FFFFFF", "#111216", "#22A06B", "#22A06B"),
-      P("Purple strap", "#F3F1F6", "#111216", "#6B6F78", "#FFFFFF", "#111216", "#7B4FC9", "#7B4FC9"),
-      P("Black & gold", "#1A1A1D", "#FFFFFF", "#6B6F78", "#FFFFFF", "#111216", "#F2C94C", "#F2C94C")
+      P2("Blue strap", "#F4F4F1", "#111216", "#6B6F78", "#FFFFFF", "#111216", C.neon, C.neon),
+      P2("Red strap", "#F4F1F0", "#111216", "#6B6F78", "#FFFFFF", "#111216", "#E03A3A", "#E03A3A"),
+      P2("Green strap", "#F1F4F1", "#111216", "#6B6F78", "#FFFFFF", "#111216", "#22A06B", "#22A06B"),
+      P2("Purple strap", "#F3F1F6", "#111216", "#6B6F78", "#FFFFFF", "#111216", "#7B4FC9", "#7B4FC9"),
+      P2("Black & gold", "#1A1A1D", "#FFFFFF", "#6B6F78", "#FFFFFF", "#111216", "#F2C94C", "#F2C94C")
     ],
     window: (W, H, u) => badgeLayout(W, H, u).R,
     marks: ["tl"],
@@ -1847,11 +2112,11 @@ var DEFS = {
     label: "\u{1F0CF} Game card",
     group: "Fun",
     palettes: () => [
-      P("Your rarity", "#2B1650", "#FFFFFF", "#B9A8CC", "#0F0A22", "#FFFFFF", "#FFE27A", "#FF7AD9"),
-      { ...P("Legendary", "#2B1650", "#FFFFFF", "#B9A8CC", "#0F0A22", "#FFFFFF", "#FFE27A", "#FF7AD9"), rarity: "legendary" },
-      { ...P("Epic", "#2A1240", "#FFFFFF", "#B9A8CC", "#0E0A1C", "#FFFFFF", "#E9B8FF", "#C77DFF"), rarity: "epic" },
-      { ...P("Gold", "#2E2208", "#FFFFFF", "#C9B98A", "#120D04", "#FFFFFF", "#F2C94C", "#FFE08A"), rarity: "rare" },
-      { ...P("Silver", "#1E2530", "#FFFFFF", "#AFC3D6", "#0C1016", "#FFFFFF", "#DDE7F2", "#8DA2B8"), rarity: "uncommon" }
+      P2("Your rarity", "#2B1650", "#FFFFFF", "#B9A8CC", "#0F0A22", "#FFFFFF", "#FFE27A", "#FF7AD9"),
+      { ...P2("Legendary", "#2B1650", "#FFFFFF", "#B9A8CC", "#0F0A22", "#FFFFFF", "#FFE27A", "#FF7AD9"), rarity: "legendary" },
+      { ...P2("Epic", "#2A1240", "#FFFFFF", "#B9A8CC", "#0E0A1C", "#FFFFFF", "#E9B8FF", "#C77DFF"), rarity: "epic" },
+      { ...P2("Gold", "#2E2208", "#FFFFFF", "#C9B98A", "#120D04", "#FFFFFF", "#F2C94C", "#FFE08A"), rarity: "rare" },
+      { ...P2("Silver", "#1E2530", "#FFFFFF", "#AFC3D6", "#0C1016", "#FFFFFF", "#DDE7F2", "#8DA2B8"), rarity: "uncommon" }
     ],
     window: (W, H, u) => gameLayout(W, H, u).R,
     marks: ["tl", "tr"],
@@ -1961,10 +2226,10 @@ var DEFS = {
     label: "\u{1F4F7} Photo booth",
     group: "Fun",
     palettes: () => [
-      P("White strip", "#1A1A1D", "#FFFFFF", "#9A9AA0", "#FAFAF7", "#2A2A2E", "#FF4F7B", "#FF4F7B"),
-      P("Black strip", "#EDE7DD", "#141413", "#6B6A66", "#141414", "#F2F2F2", "#D9480F", "#D9480F"),
-      P("Red strip", "#2A0E10", "#FFE5E5", "#C99A9A", "#D62839", "#FFFFFF", "#FFC440", "#FFC440"),
-      P("Kraft", "#3A2E22", "#F4E7D3", "#BFA88A", "#D9BF94", "#3A2414", "#FFB020", "#FFB020")
+      P2("White strip", "#1A1A1D", "#FFFFFF", "#9A9AA0", "#FAFAF7", "#2A2A2E", "#FF4F7B", "#FF4F7B"),
+      P2("Black strip", "#EDE7DD", "#141413", "#6B6A66", "#141414", "#F2F2F2", "#D9480F", "#D9480F"),
+      P2("Red strip", "#2A0E10", "#FFE5E5", "#C99A9A", "#D62839", "#FFFFFF", "#FFC440", "#FFC440"),
+      P2("Kraft", "#3A2E22", "#F4E7D3", "#BFA88A", "#D9BF94", "#3A2414", "#FFB020", "#FFB020")
     ],
     window: (W, H, u) => boothLayout(W, H, u).cells[0],
     marks: ["tr"],
@@ -1986,7 +2251,7 @@ var DEFS = {
         const img = ph.length > 1 ? ph[(at + 1 + k) % ph.length] : void 0;
         if (img) coverImg(ctx, img, c);
         else {
-          ctx.fillStyle = withA(p.ink, 0.12);
+          ctx.fillStyle = withA2(p.ink, 0.12);
           ctx.fillRect(c.x, c.y, c.w, c.h);
         }
       });
@@ -2002,10 +2267,10 @@ var DEFS = {
     label: "\u{1F5C2}\uFE0F Photo dump",
     group: "Fun",
     palettes: () => [
-      P("White", "#FAFAF7", "#141413", "#6B6A66", "#EDEDE8", "#141413", "#FF4F7B", "#FF4F7B"),
-      P("Black", "#0E0E10", "#FFFFFF", "#8A8A90", "#1C1C20", "#FFFFFF", "#FFC440", "#FFC440"),
-      P("Beige", "#EFE6D8", "#3A2E22", "#7A6A55", "#E2D5C0", "#3A2E22", "#C2410C", "#C2410C"),
-      P("Lilac", "#ECE6F7", "#2E2440", "#6A5E80", "#DDD3EE", "#2E2440", "#7B4FC9", "#7B4FC9")
+      P2("White", "#FAFAF7", "#141413", "#6B6A66", "#EDEDE8", "#141413", "#FF4F7B", "#FF4F7B"),
+      P2("Black", "#0E0E10", "#FFFFFF", "#8A8A90", "#1C1C20", "#FFFFFF", "#FFC440", "#FFC440"),
+      P2("Beige", "#EFE6D8", "#3A2E22", "#7A6A55", "#E2D5C0", "#3A2E22", "#C2410C", "#C2410C"),
+      P2("Lilac", "#ECE6F7", "#2E2440", "#6A5E80", "#DDD3EE", "#2E2440", "#7B4FC9", "#7B4FC9")
     ],
     window: (W, H, u) => dumpLayout(W, H, u).R,
     marks: ["tr", "br"],
@@ -2071,10 +2336,10 @@ var DEFS = {
     label: "\u23F1\uFE0F Story",
     group: "Fun",
     palettes: () => [
-      P("Sunset ring", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#FEDA75", "#D62976"),
-      P("Ocean ring", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#4FACFE", "#00F2FE"),
-      P("Lime ring", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#A8FF78", "#22C55E"),
-      P("Mono", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#FFFFFF", "#8A8A8A")
+      P2("Sunset ring", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#FEDA75", "#D62976"),
+      P2("Ocean ring", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#4FACFE", "#00F2FE"),
+      P2("Lime ring", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#A8FF78", "#22C55E"),
+      P2("Mono", "#000000", "#FFFFFF", "#DDDDDD", "#000000", "#FFFFFF", "#FFFFFF", "#8A8A8A")
     ],
     window: banded(0, 0, 0),
     marks: [],
@@ -2100,14 +2365,14 @@ var DEFS = {
       const gap = 8 * u;
       const bw = (W - x0 * 2 - gap * (n - 1)) / n;
       for (let i = 0; i < n; i++) {
-        const done3 = f.seg ? i < f.seg.i ? 1 : i === f.seg.i ? f.seg.p : 0 : f.t > f.total / 2 ? 1 : 0;
+        const done2 = f.seg ? i < f.seg.i ? 1 : i === f.seg.i ? f.seg.p : 0 : f.t > f.total / 2 ? 1 : 0;
         const x = x0 + i * (bw + gap);
         ctx.fillStyle = "rgba(255,255,255,0.35)";
         roundRect(ctx, { x, y: 28 * u, w: bw, h: 6 * u }, 3 * u);
         ctx.fill();
-        if (done3 > 0) {
+        if (done2 > 0) {
           ctx.fillStyle = "#FFFFFF";
-          roundRect(ctx, { x, y: 28 * u, w: bw * done3, h: 6 * u }, 3 * u);
+          roundRect(ctx, { x, y: 28 * u, w: bw * done2, h: 6 * u }, 3 * u);
           ctx.fill();
         }
       }
@@ -2151,10 +2416,10 @@ var DEFS = {
     label: "\u{1F4A5} Comic",
     group: "Fun",
     palettes: () => [
-      P("Yellow", "#FFD23F", "#111111", "#3A3A3A", "#FFF6C9", "#111111", "#FF3B3B", "#E4572E"),
-      P("Cyan", "#3EC1F3", "#111111", "#123A52", "#FFFFFF", "#111111", "#FFD23F", "#1B6FA8"),
-      P("Pink", "#FF8FC7", "#111111", "#4A1030", "#FFFFFF", "#111111", "#FFE14D", "#C2185B"),
-      P("Lime", "#B6F36B", "#111111", "#21401A", "#FFFFFF", "#111111", "#FF6B35", "#2E7D32")
+      P2("Yellow", "#FFD23F", "#111111", "#3A3A3A", "#FFF6C9", "#111111", "#FF3B3B", "#E4572E"),
+      P2("Cyan", "#3EC1F3", "#111111", "#123A52", "#FFFFFF", "#111111", "#FFD23F", "#1B6FA8"),
+      P2("Pink", "#FF8FC7", "#111111", "#4A1030", "#FFFFFF", "#111111", "#FFE14D", "#C2185B"),
+      P2("Lime", "#B6F36B", "#111111", "#21401A", "#FFFFFF", "#111111", "#FF6B35", "#2E7D32")
     ],
     window: (W, H, u) => isWide(W, H) ? capped(170, 150, 60, 1.8)(W, H, u) : capped(270, 240, 70, 1.5)(W, H, u),
     tilt: 0.015,
@@ -2164,7 +2429,7 @@ var DEFS = {
       const { u, W, H, R } = f;
       const p = f.pal;
       fill(ctx, f, p.bg);
-      ctx.fillStyle = withA(p.accent2, 0.35);
+      ctx.fillStyle = withA2(p.accent2, 0.35);
       const step = 30 * u;
       for (let y = 0; y < H + step; y += step)
         for (let x = Math.floor(y / step) % 2 * (step / 2); x < W + step; x += step) {
@@ -2245,10 +2510,10 @@ var DEFS = {
     label: "\u{1F303} Neon sign",
     group: "Fun",
     palettes: () => [
-      P("Pink & blue", "#0B0710", "#FFFFFF", "#8A7F99", "#140D1C", "#FFFFFF", "#FF3EA5", "#3EC5FF"),
-      P("Green & yellow", "#07100B", "#FFFFFF", "#7F9988", "#0C1A12", "#FFFFFF", "#39FF88", "#FFE14D"),
-      P("Red & white", "#120606", "#FFFFFF", "#997F7F", "#1C0B0B", "#FFFFFF", "#FF3B3B", "#FFFFFF"),
-      P("Purple & cyan", "#0A0714", "#FFFFFF", "#8A82A6", "#130E22", "#FFFFFF", "#B26BFF", "#3EF3E0")
+      P2("Pink & blue", "#0B0710", "#FFFFFF", "#8A7F99", "#140D1C", "#FFFFFF", "#FF3EA5", "#3EC5FF"),
+      P2("Green & yellow", "#07100B", "#FFFFFF", "#7F9988", "#0C1A12", "#FFFFFF", "#39FF88", "#FFE14D"),
+      P2("Red & white", "#120606", "#FFFFFF", "#997F7F", "#1C0B0B", "#FFFFFF", "#FF3B3B", "#FFFFFF"),
+      P2("Purple & cyan", "#0A0714", "#FFFFFF", "#8A82A6", "#130E22", "#FFFFFF", "#B26BFF", "#3EF3E0")
     ],
     window: (W, H, u) => isWide(W, H) ? capped(190, 150, 80, 1.8)(W, H, u) : capped(300, 260, 90, 1.5)(W, H, u),
     marks: ["tr", "br"],
@@ -2273,7 +2538,7 @@ var DEFS = {
         }
       }
       const spill = ctx.createRadialGradient(W / 2, R.y + R.h / 2, 0, W / 2, R.y + R.h / 2, Math.max(R.w, R.h) * 0.85);
-      spill.addColorStop(0, withA(p.accent, 0.22));
+      spill.addColorStop(0, withA2(p.accent, 0.22));
       spill.addColorStop(1, "rgba(0,0,0,0)");
       ctx.fillStyle = spill;
       ctx.fillRect(0, 0, W, H);
@@ -2308,7 +2573,10 @@ var DEFS = {
       }
       ctx.restore();
     }
-  }
+  },
+  // photo prints (./frames-prints): festive, and a plain collage
+  "festive-prints": festivePrints,
+  "prints-collage": printsCollage
 };
 var FRAMES = DEFS;
 var FRAME_IDS = Object.keys(FRAMES);
@@ -2337,7 +2605,11 @@ var WORD_SLOTS = [
   { id: "lanyard.org", frame: "lanyard", label: "Company or club", max: 24, placeholder: "the sponsor's name", sponsor: "edit" },
   { id: "gamecard.class", frame: "gamecard", label: "Class", max: 18, placeholder: "Party legend", sponsor: "edit" },
   { id: "gamecard.power", frame: "gamecard", label: "Special move", max: 40, placeholder: "The perfect group selfie", sponsor: "edit" },
-  { id: "code.from", frame: "code", label: "Trip from", max: 14, placeholder: "home", sponsor: "edit" }
+  { id: "code.from", frame: "code", label: "Trip from", max: 14, placeholder: "home", sponsor: "edit" },
+  { id: "festive-prints.title", frame: "festive-prints", label: "Title", max: 30, placeholder: "the title", sponsor: "fixed" },
+  { id: "festive-prints.note", frame: "festive-prints", label: "Line when people write none", max: 40, placeholder: "none", sponsor: "fixed" },
+  { id: "prints-collage.title", frame: "prints-collage", label: "Title", max: 30, placeholder: "the title", sponsor: "fixed" },
+  { id: "prints-collage.note", frame: "prints-collage", label: "Line when people write none", max: 40, placeholder: "none", sponsor: "fixed" }
 ];
 
 // src/core/frames-meta.ts
@@ -2364,7 +2636,9 @@ var LOOKS = {
   postcard: { best: "Views and landmarks", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "rain"] },
   calendar: { best: "Day by day", ratio: "9:16", intro: "chime", tracks: ["drive", "house", "happy"] },
   player: { best: "Your day as a song", ratio: "9:16", intro: "vinyl", tracks: ["glow", "happy", "sunset"] },
-  clean: { best: "Anything: lets the photos talk", ratio: "9:16", intro: "takeoff", tracks: ["drive", "happy", "glow"] }
+  clean: { best: "Anything: lets the photos talk", ratio: "9:16", intro: "takeoff", tracks: ["drive", "happy", "glow"] },
+  "festive-prints": { best: "Family, friends, festive evenings", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "dhol"] },
+  "prints-collage": { best: "Two or three photos as prints, no decorations", ratio: "4:5", intro: "vinyl", tracks: ["chai", "sunset", "happy"] }
 };
 var groupLabel = (g) => g === "For devs" ? "Work & tech" : g === "Pizza" ? "Pizza frames" : g;
 var strip = (label) => label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
@@ -2540,24 +2814,24 @@ var shareTextOf = (c) => (c.share.text.includes("{link}") ? c.share.text.replace
 // src/packs/pizza.ts
 var PIZZA_PACK = "pizza";
 var GROUP = "Pizza";
-var P2 = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
-var wide = (W, H) => W > 1.3 * H;
+var P3 = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
+var wide2 = (W, H) => W > 1.3 * H;
 var tallness = (W, H) => H / W;
 var BEBAS = (px) => `400 ${px}px "Bebas Neue", Impact, "Arial Narrow", sans-serif`;
-var MONO = (px) => F.mono(px, 700);
+var MONO2 = (px) => F.mono(px, 700);
 var MONO_LIGHT = (px) => F.mono(px, 500);
 var SERIF_I = (px) => `italic 600 ${px}px Georgia, "Times New Roman", serif`;
-var HAND = (px) => `700 ${px}px Caveat, "Comic Sans MS", cursive`;
+var HAND2 = (px) => `700 ${px}px Caveat, "Comic Sans MS", cursive`;
 var CINZEL = (px) => `900 ${px}px Cinzel, Georgia, serif`;
 var SANS = (px) => F.sans(px, 700);
-var word = (f, id, fallback) => {
+var word2 = (f, id, fallback) => {
   const w = f.words?.[id];
   return w === void 0 ? fallback : w;
 };
 var nameOf = (f) => f.journey.name.trim();
 var lineOf = (f) => (f.text ?? "").trim();
 var placeDate = (f) => [f.brand?.place, f.eventDates].filter(Boolean).join(" \xB7 ");
-function say(ctx, s, x, y, maxW, px, font, color2, align = "center") {
+function say2(ctx, s, x, y, maxW, px, font, color2, align = "center") {
   if (!s) return;
   let size = px;
   ctx.font = font(size);
@@ -2578,7 +2852,7 @@ function stack(ctx, lines, box, align = "center") {
   for (const l of shown) {
     const px = l.px * k;
     y += px * 0.61;
-    say(ctx, l.s, align === "center" ? box.x + box.w / 2 : box.x, y, box.w, px, l.font, l.color, align);
+    say2(ctx, l.s, align === "center" ? box.x + box.w / 2 : box.x, y, box.w, px, l.font, l.color, align);
     y += px * 0.61 + (l.gap ?? 0) * k;
   }
 }
@@ -2593,7 +2867,7 @@ function logo(ctx, f, cx, y, h) {
 function credit(ctx, f, color2) {
   ctx.save();
   ctx.globalAlpha = Math.max(ctx.globalAlpha, 0.85);
-  text(ctx, f.brand?.credit || CREDIT_LINE, f.W - 28 * f.u, f.H - 26 * f.u, MONO(20 * f.u), color2, "right");
+  text(ctx, f.brand?.credit || CREDIT_LINE, f.W - 28 * f.u, f.H - 26 * f.u, MONO2(20 * f.u), color2, "right");
   ctx.restore();
 }
 function mat(ctx, R, pad, fill2, stroke, line = 0) {
@@ -2621,12 +2895,12 @@ var pizzaBox = {
   label: "\u{1F355} Pizza box",
   group: GROUP,
   palettes: () => [
-    P2("Kraft", "#C9965B", "#B3261E", "#7A5530", "#F4E6CC", "#3B2412", "#D7262B", "#1E7B34"),
-    P2("White box", "#EFE9DD", "#C8262B", "#8C8478", "#FFFFFF", "#2A2622", "#C8262B", "#1E7B34"),
-    P2("Black box", "#151515", "#FFD23D", "#8A8A8A", "#222222", "#FEFDFA", "#FF393A", "#FFD23D")
+    P3("Kraft", "#C9965B", "#B3261E", "#7A5530", "#F4E6CC", "#3B2412", "#D7262B", "#1E7B34"),
+    P3("White box", "#EFE9DD", "#C8262B", "#8C8478", "#FFFFFF", "#2A2622", "#C8262B", "#1E7B34"),
+    P3("Black box", "#151515", "#FFD23D", "#8A8A8A", "#222222", "#FEFDFA", "#FF393A", "#FFD23D")
   ],
   window(W, H, u) {
-    if (wide(W, H)) return { x: 120 * u, y: 110 * u, w: W * 0.56 - 120 * u, h: H - 220 * u };
+    if (wide2(W, H)) return { x: 120 * u, y: 110 * u, w: W * 0.56 - 120 * u, h: H - 220 * u };
     const [top, bottom] = boxBands(W, H);
     return { x: 120 * u, y: top * u, w: W - 240 * u, h: H - (top + bottom) * u };
   },
@@ -2635,9 +2909,9 @@ var pizzaBox = {
     const { W, H, u, R, pal } = f;
     ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, W, H);
-    ctx.fillStyle = withA(pal.ink, 0.035);
+    ctx.fillStyle = withA2(pal.ink, 0.035);
     for (let y = 0; y < H; y += 14 * u) ctx.fillRect(0, y, W, 3 * u);
-    ctx.strokeStyle = withA(pal.ink, 0.25);
+    ctx.strokeStyle = withA2(pal.ink, 0.25);
     ctx.lineWidth = 6 * u;
     const e = 28 * u;
     ctx.strokeRect(e, e, W - 2 * e, H - 2 * e);
@@ -2649,13 +2923,13 @@ var pizzaBox = {
     ctx.stroke();
     for (const [x, y, r2] of [[W * 0.84, H * 0.1, 130 * u], [W * 0.12, H * 0.92, 95 * u]]) {
       const g = ctx.createRadialGradient(x, y, 0, x, y, r2);
-      g.addColorStop(0, withA(mix2(pal.bg, "#000000", 0.5), 0.22));
-      g.addColorStop(1, withA(pal.bg, 0));
+      g.addColorStop(0, withA2(mix2(pal.bg, "#000000", 0.5), 0.22));
+      g.addColorStop(1, withA2(pal.bg, 0));
       ctx.fillStyle = g;
       ctx.fillRect(x - r2, y - r2, r2 * 2, r2 * 2);
     }
     mat(ctx, R, 16 * u, pal.paper, pal.fg, 6 * u);
-    const top = wide(W, H) ? { x: R.x + R.w + 60 * u, y: 90 * u, w: W - R.x - R.w - 150 * u, h: H * 0.45 } : { x: 120 * u, y: 40 * u, w: W - 240 * u, h: R.y - 70 * u };
+    const top = wide2(W, H) ? { x: R.x + R.w + 60 * u, y: 90 * u, w: W - R.x - R.w - 150 * u, h: H * 0.45 } : { x: 120 * u, y: 40 * u, w: W - 240 * u, h: R.y - 70 * u };
     const r = Math.min(95 * u, top.h * 0.28);
     const cx = top.x + top.w / 2;
     const cy = top.y + r + top.h * 0.04;
@@ -2668,23 +2942,23 @@ var pizzaBox = {
     ctx.beginPath();
     ctx.arc(cx, cy, r * 0.84, 0, Math.PI * 2);
     ctx.stroke();
-    const seal = word(f, "pizza-box.top", "HOT & FRESH").toUpperCase();
+    const seal = word2(f, "pizza-box.top", "HOT & FRESH").toUpperCase();
     const parts = seal.includes(" & ") ? [seal.split(" & ")[0], `& ${seal.split(" & ")[1]}`] : [seal];
-    parts.forEach((p, i) => say(ctx, p, cx, cy + (i - (parts.length - 1) / 2) * r * 0.5, r * 1.4, r * 0.48, BEBAS, pal.paper));
-    say(ctx, f.eventName.toUpperCase(), cx, cy + r + (top.h - 2 * r) * 0.5, top.w, Math.min(120 * u, top.h * 0.36), BEBAS, pal.fg);
-    if (!wide(W, H)) text(ctx, "THIS SIDE UP \u2191", 52 * u, 70 * u, MONO_LIGHT(18 * u), withA(pal.ink, 0.45), "left");
+    parts.forEach((p, i) => say2(ctx, p, cx, cy + (i - (parts.length - 1) / 2) * r * 0.5, r * 1.4, r * 0.48, BEBAS, pal.paper));
+    say2(ctx, f.eventName.toUpperCase(), cx, cy + r + (top.h - 2 * r) * 0.5, top.w, Math.min(120 * u, top.h * 0.36), BEBAS, pal.fg);
+    if (!wide2(W, H)) text(ctx, "THIS SIDE UP \u2191", 52 * u, 70 * u, MONO_LIGHT(18 * u), withA2(pal.ink, 0.45), "left");
   },
   front(ctx, f) {
     const { W, H, u, R, pal } = f;
-    const box = wide(W, H) ? { x: R.x + R.w + 60 * u, y: H * 0.52, w: W - R.x - R.w - 150 * u, h: H * 0.4 } : { x: 120 * u, y: R.y + R.h + 36 * u, w: W - 240 * u, h: H - (R.y + R.h) - 130 * u };
+    const box = wide2(W, H) ? { x: R.x + R.w + 60 * u, y: H * 0.52, w: W - R.x - R.w - 150 * u, h: H * 0.4 } : { x: 120 * u, y: R.y + R.h + 36 * u, w: W - 240 * u, h: H - (R.y + R.h) - 130 * u };
     stack(ctx, [
-      { s: word(f, "pizza-box.to", "DELIVERED TO").toUpperCase(), px: 26 * u, font: MONO, color: withA(pal.ink, 0.6), gap: 6 * u },
+      { s: word2(f, "pizza-box.to", "DELIVERED TO").toUpperCase(), px: 26 * u, font: MONO2, color: withA2(pal.ink, 0.6), gap: 6 * u },
       { s: nameOf(f), px: 96 * u, font: BEBAS, color: pal.ink },
       { s: lineOf(f) && `\u201C${lineOf(f)}\u201D`, px: 36 * u, font: SERIF_I, color: pal.ink, gap: 10 * u },
-      { s: placeDate(f).toUpperCase(), px: 24 * u, font: MONO, color: pal.fg }
+      { s: placeDate(f).toUpperCase(), px: 24 * u, font: MONO2, color: pal.fg }
     ], box);
-    logo(ctx, f, wide(W, H) ? box.x + box.w / 2 : W / 2, H - 92 * u, 44 * u);
-    credit(ctx, f, withA(pal.ink, 0.5));
+    logo(ctx, f, wide2(W, H) ? box.x + box.w / 2 : W / 2, H - 92 * u, 44 * u);
+    credit(ctx, f, withA2(pal.ink, 0.5));
   }
 };
 var receiptBands = (W, H) => tallness(W, H) >= 1.5 ? { head: 250, items: 620 } : { head: 190, items: 480 };
@@ -2738,10 +3012,10 @@ function receiptBody(ctx, f, box, withHeader) {
   const L = box.x;
   const Rx = box.x + box.w;
   const item = (y2, a, b, px2, bold = false) => {
-    const font = bold ? MONO : MONO_LIGHT;
+    const font = bold ? MONO2 : MONO_LIGHT;
     text(ctx, b, Rx, y2, font(px2), pal.ink, "right");
     ctx.font = font(px2);
-    say(ctx, a, L, y2, box.w - ctx.measureText(b).width - 24 * u, px2, font, pal.ink, "left");
+    say2(ctx, a, L, y2, box.w - ctx.measureText(b).width - 24 * u, px2, font, pal.ink, "left");
   };
   const rows = (withHeader ? 3.2 : 0) + 11.2;
   const k = box.h / rows;
@@ -2749,19 +3023,19 @@ function receiptBody(ctx, f, box, withHeader) {
   let y = box.y;
   if (withHeader) {
     const used = logo(ctx, f, L + box.w / 2, y + k * 0.1, Math.min(54 * u, k * 1.1));
-    say(ctx, f.eventName.toUpperCase(), L + box.w / 2, y + (used ? k * 1.75 : k * 0.9), box.w, px * 1.25, MONO, pal.ink);
-    say(ctx, placeDate(f).toUpperCase(), L + box.w / 2, y + (used ? k * 2.6 : k * 1.9), box.w, px * 0.85, MONO_LIGHT, withA(pal.ink, 0.7));
+    say2(ctx, f.eventName.toUpperCase(), L + box.w / 2, y + (used ? k * 1.75 : k * 0.9), box.w, px * 1.25, MONO2, pal.ink);
+    say2(ctx, placeDate(f).toUpperCase(), L + box.w / 2, y + (used ? k * 2.6 : k * 1.9), box.w, px * 0.85, MONO_LIGHT, withA2(pal.ink, 0.7));
     y += k * 3.2;
   }
-  dashed(ctx, L, Rx, y + k * 0.3, u, withA(pal.ink, 0.5));
-  item(y + k * 1.1, word(f, "pizza-receipt.item1", "2 \xD7 LARGE PIZZA"), word(f, "pizza-receipt.price1", "10,000 BTC"), px);
-  item(y + k * 2, word(f, "pizza-receipt.item2", "NEW FRENS"), word(f, "pizza-receipt.price2", "PRICELESS"), px);
-  dashed(ctx, L, Rx, y + k * 2.7, u, withA(pal.ink, 0.5));
-  item(y + k * 3.5, "TOTAL", word(f, "pizza-receipt.price1", "10,000 BTC"), px * 1.25, true);
-  say(ctx, word(f, "pizza-receipt.paid", "PAID IN BITCOIN \xB7 22.05.2010"), L + box.w / 2, y + k * 4.5, box.w, px * 0.8, MONO, pal.accent);
-  dashed(ctx, L, Rx, y + k * 5.2, u, withA(pal.ink, 0.5));
-  say(ctx, nameOf(f) ? `SERVED TO: ${nameOf(f).toUpperCase()}` : "SERVED HOT", L + box.w / 2, y + k * 6.1, box.w, px * 1.1, MONO, pal.ink);
-  if (lineOf(f)) say(ctx, `\u201C${lineOf(f)}\u201D`, L + box.w / 2, y + k * 7, box.w, px * 1.05, SERIF_I, pal.ink);
+  dashed(ctx, L, Rx, y + k * 0.3, u, withA2(pal.ink, 0.5));
+  item(y + k * 1.1, word2(f, "pizza-receipt.item1", "2 \xD7 LARGE PIZZA"), word2(f, "pizza-receipt.price1", "10,000 BTC"), px);
+  item(y + k * 2, word2(f, "pizza-receipt.item2", "NEW FRENS"), word2(f, "pizza-receipt.price2", "PRICELESS"), px);
+  dashed(ctx, L, Rx, y + k * 2.7, u, withA2(pal.ink, 0.5));
+  item(y + k * 3.5, "TOTAL", word2(f, "pizza-receipt.price1", "10,000 BTC"), px * 1.25, true);
+  say2(ctx, word2(f, "pizza-receipt.paid", "PAID IN BITCOIN \xB7 22.05.2010"), L + box.w / 2, y + k * 4.5, box.w, px * 0.8, MONO2, pal.accent);
+  dashed(ctx, L, Rx, y + k * 5.2, u, withA2(pal.ink, 0.5));
+  say2(ctx, nameOf(f) ? `SERVED TO: ${nameOf(f).toUpperCase()}` : "SERVED HOT", L + box.w / 2, y + k * 6.1, box.w, px * 1.1, MONO2, pal.ink);
+  if (lineOf(f)) say2(ctx, `\u201C${lineOf(f)}\u201D`, L + box.w / 2, y + k * 7, box.w, px * 1.05, SERIF_I, pal.ink);
   const rnd = seeded(hash(nameOf(f) + f.eventName));
   const bw = Math.min(box.w * 0.8, 520 * u);
   let bx = L + (box.w - bw) / 2;
@@ -2772,15 +3046,15 @@ function receiptBody(ctx, f, box, withHeader) {
     if (rnd() > 0.35) ctx.fillRect(bx, by, w, k * 1.5);
     bx += w + 2.4 * u;
   }
-  say(ctx, word(f, "pizza-receipt.footer", "THANK YOU \xB7 PIZZA THE PLANET"), L + box.w / 2, y + k * 10.1, box.w, px * 0.85, MONO, pal.ink);
+  say2(ctx, word2(f, "pizza-receipt.footer", "THANK YOU \xB7 PIZZA THE PLANET"), L + box.w / 2, y + k * 10.1, box.w, px * 0.85, MONO2, pal.ink);
 }
 var pizzaReceipt = {
   label: "\u{1F9FE} Bitcoin Pizza receipt",
   group: GROUP,
   palettes: () => [
-    P2("Bitcoin orange", "#F7931A", "#1A1A1A", "#6B6B6B", "#FBFAF5", "#1A1A1A", "#D7262B", "#F7931A"),
-    P2("Night", "#121212", "#FEFDFA", "#8A8A8A", "#FBFAF5", "#1A1A1A", "#D7262B", "#F7931A"),
-    P2("Pizza red", "#B3261E", "#FEFDFA", "#F3B9B4", "#FBFAF5", "#1A1A1A", "#B3261E", "#F7931A")
+    P3("Bitcoin orange", "#F7931A", "#1A1A1A", "#6B6B6B", "#FBFAF5", "#1A1A1A", "#D7262B", "#F7931A"),
+    P3("Night", "#121212", "#FEFDFA", "#8A8A8A", "#FBFAF5", "#1A1A1A", "#D7262B", "#F7931A"),
+    P3("Pizza red", "#B3261E", "#FEFDFA", "#F3B9B4", "#FBFAF5", "#1A1A1A", "#B3261E", "#F7931A")
   ],
   window: receiptWindow,
   ownsText: true,
@@ -2809,13 +3083,13 @@ var pizzaReceipt = {
     const hb = { x: x + 55 * u, y: y0 + 40 * u, w: w - 110 * u, h: head * u - 60 * u };
     const used = logo(ctx, f, x + w / 2, hb.y, Math.min(56 * u, hb.h * 0.36));
     stack(ctx, [
-      { s: f.eventName.toUpperCase(), px: 36 * u, font: MONO, color: pal.ink },
-      { s: placeDate(f).toUpperCase(), px: 22 * u, font: MONO_LIGHT, color: withA(pal.ink, 0.7) }
+      { s: f.eventName.toUpperCase(), px: 36 * u, font: MONO2, color: pal.ink },
+      { s: placeDate(f).toUpperCase(), px: 22 * u, font: MONO_LIGHT, color: withA2(pal.ink, 0.7) }
     ], { ...hb, y: hb.y + (used ? used + 10 * u : 0), h: hb.h - (used ? used + 10 * u : 0) });
     receiptBody(ctx, f, { x: x + 55 * u, y: R.y + R.h + 20 * u, w: w - 110 * u, h: items * u - 60 * u }, false);
   },
   front(ctx, f) {
-    credit(ctx, f, withA(f.pal.fg, 0.6));
+    credit(ctx, f, withA2(f.pal.fg, 0.6));
   }
 };
 var POSTER = 0.72;
@@ -2828,9 +3102,9 @@ var pizzaMafia = {
   label: "\u{1F574}\uFE0F Pizza Mafia wanted",
   group: GROUP,
   palettes: () => [
-    P2("Old paper", "#2A1A10", "#E9D9B4", "#8B6B4A", "#EAD9B0", "#2B1A0E", "#B3261E", "#2B1A0E"),
-    P2("Night", "#0B0B10", "#FEFDFA", "#8A8A8A", "#EFE6D2", "#151515", "#FF393A", "#151515"),
-    P2("Red wall", "#7A1712", "#FEFDFA", "#E8B4AE", "#F1E4C8", "#2B1A0E", "#B3261E", "#2B1A0E")
+    P3("Old paper", "#2A1A10", "#E9D9B4", "#8B6B4A", "#EAD9B0", "#2B1A0E", "#B3261E", "#2B1A0E"),
+    P3("Night", "#0B0B10", "#FEFDFA", "#8A8A8A", "#EFE6D2", "#151515", "#FF393A", "#151515"),
+    P3("Red wall", "#7A1712", "#FEFDFA", "#E8B4AE", "#F1E4C8", "#2B1A0E", "#B3261E", "#2B1A0E")
   ],
   window(W, H, u) {
     const p = poster(W, H, u);
@@ -2844,7 +3118,7 @@ var pizzaMafia = {
     ctx.fillStyle = pal.bg;
     ctx.fillRect(0, 0, W, H);
     const rnd = seeded(11);
-    ctx.strokeStyle = withA(mix2(pal.bg, "#000000", 0.5), 0.35);
+    ctx.strokeStyle = withA2(mix2(pal.bg, "#000000", 0.5), 0.35);
     ctx.lineWidth = 2 * u;
     for (let i = 0; i < 40; i++) {
       const y = rnd() * H;
@@ -2862,8 +3136,8 @@ var pizzaMafia = {
     ctx.fillRect(p.x, p.y, p.w, p.h);
     ctx.restore();
     const g = ctx.createRadialGradient(p.x + p.w / 2, p.y + p.h / 2, p.w * 0.35, p.x + p.w / 2, p.y + p.h / 2, p.h * 0.75);
-    g.addColorStop(0, withA(pal.paper, 0));
-    g.addColorStop(1, withA(mix2(pal.paper, "#5A3A1A", 0.6), 0.55));
+    g.addColorStop(0, withA2(pal.paper, 0));
+    g.addColorStop(1, withA2(mix2(pal.paper, "#5A3A1A", 0.6), 0.55));
     ctx.fillStyle = g;
     ctx.fillRect(p.x, p.y, p.w, p.h);
     for (const x of [p.x + 26 * u, p.x + p.w - 26 * u]) {
@@ -2874,8 +3148,8 @@ var pizzaMafia = {
     }
     const cx = p.x + p.w / 2;
     const inner = p.w * 0.86;
-    say(ctx, word(f, "pizza-mafia.title", "WANTED").toUpperCase(), cx, p.y + p.h * 0.1, inner, p.h * 0.11, CINZEL, pal.ink);
-    say(ctx, `BY THE ${(f.eventName || "PIZZA MAFIA").toUpperCase()}`, cx, p.y + p.h * 0.185, inner, p.h * 0.026, MONO, pal.accent);
+    say2(ctx, word2(f, "pizza-mafia.title", "WANTED").toUpperCase(), cx, p.y + p.h * 0.1, inner, p.h * 0.11, CINZEL, pal.ink);
+    say2(ctx, `BY THE ${(f.eventName || "PIZZA MAFIA").toUpperCase()}`, cx, p.y + p.h * 0.185, inner, p.h * 0.026, MONO2, pal.accent);
     mat(ctx, R, 10 * u, pal.ink);
   },
   front(ctx, f) {
@@ -2886,13 +3160,13 @@ var pizzaMafia = {
     stack(ctx, [
       { s: nameOf(f).toUpperCase() || "THE DON", px: p.h * 0.075, font: BEBAS, color: pal.ink },
       { s: lineOf(f) && `a.k.a. \u201C${lineOf(f)}\u201D`, px: p.h * 0.03, font: SERIF_I, color: pal.ink, gap: p.h * 0.012 },
-      { s: word(f, "pizza-mafia.crime", "FOR STEALING THE LAST SLICE").toUpperCase(), px: p.h * 0.026, font: MONO, color: pal.ink },
-      { s: word(f, "pizza-mafia.reward", "REWARD: ONE LARGE PEPPERONI").toUpperCase(), px: p.h * 0.032, font: BEBAS, color: pal.accent }
+      { s: word2(f, "pizza-mafia.crime", "FOR STEALING THE LAST SLICE").toUpperCase(), px: p.h * 0.026, font: MONO2, color: pal.ink },
+      { s: word2(f, "pizza-mafia.reward", "REWARD: ONE LARGE PEPPERONI").toUpperCase(), px: p.h * 0.032, font: BEBAS, color: pal.accent }
     ], { x: cx - inner / 2, y: R.y + R.h + p.h * 0.02, w: inner, h: p.y + p.h * 0.9 - (R.y + R.h) });
     const pd = placeDate(f).toUpperCase();
     const used = logo(ctx, f, cx, p.y + p.h - p.h * 0.075, p.h * 0.035);
-    if (!used && pd) say(ctx, pd, cx, p.y + p.h - p.h * 0.05, inner, p.h * 0.022, MONO, withA(pal.ink, 0.7));
-    const stamp2 = word(f, "pizza-mafia.stamp", "PIZZA MAFIA").toUpperCase();
+    if (!used && pd) say2(ctx, pd, cx, p.y + p.h - p.h * 0.05, inner, p.h * 0.022, MONO2, withA2(pal.ink, 0.7));
+    const stamp2 = word2(f, "pizza-mafia.stamp", "PIZZA MAFIA").toUpperCase();
     if (stamp2) {
       const r = Math.min(R.w, R.h) * 0.2;
       ctx.save();
@@ -2907,15 +3181,15 @@ var pizzaMafia = {
       ctx.beginPath();
       ctx.arc(0, 0, r * 0.8, 0, Math.PI * 2);
       ctx.stroke();
-      say(ctx, stamp2, 0, -r * 0.12, r * 1.4, r * 0.32, BEBAS, pal.accent);
-      say(ctx, "MEMBER", 0, r * 0.3, r * 1.2, r * 0.2, MONO, pal.accent);
+      say2(ctx, stamp2, 0, -r * 0.12, r * 1.4, r * 0.32, BEBAS, pal.accent);
+      say2(ctx, "MEMBER", 0, r * 0.3, r * 1.2, r * 0.2, MONO2, pal.accent);
       ctx.restore();
     }
-    credit(ctx, f, withA(pal.fg, 0.6));
+    credit(ctx, f, withA2(pal.fg, 0.6));
   }
 };
 function pizzaGeo(W, H, u) {
-  if (wide(W, H)) {
+  if (wide2(W, H)) {
     const s2 = H * 0.8;
     return { s: s2, cx: W * 0.36, cy: H / 2 };
   }
@@ -2929,7 +3203,7 @@ function board(ctx, f) {
   ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, W, H);
   const rnd = seeded(5);
-  ctx.strokeStyle = withA(mix2(pal.bg, "#000000", 0.6), 0.22);
+  ctx.strokeStyle = withA2(mix2(pal.bg, "#000000", 0.6), 0.22);
   ctx.lineWidth = 2.2 * u;
   for (let i = 0; i < 46; i++) {
     const x = rnd() * W;
@@ -2943,9 +3217,9 @@ var pizzaWhole = {
   label: "\u{1F355} Whole pizza",
   group: GROUP,
   palettes: () => [
-    P2("Wood board", "#6B4226", "#FEFDFA", "#E8C9A0", "#F3E2C3", "#2A1A10", "#C7362D", "#3E7B2E"),
-    P2("Pizza red", "#B3261E", "#FEFDFA", "#F3B9B4", "#F3E2C3", "#2A1A10", "#FFD23D", "#3E7B2E"),
-    P2("Night", "#0B0B10", "#FEFDFA", "#8A8A8A", "#F3E2C3", "#2A1A10", "#FF393A", "#3E7B2E")
+    P3("Wood board", "#6B4226", "#FEFDFA", "#E8C9A0", "#F3E2C3", "#2A1A10", "#C7362D", "#3E7B2E"),
+    P3("Pizza red", "#B3261E", "#FEFDFA", "#F3B9B4", "#F3E2C3", "#2A1A10", "#FFD23D", "#3E7B2E"),
+    P3("Night", "#0B0B10", "#FEFDFA", "#8A8A8A", "#F3E2C3", "#2A1A10", "#FF393A", "#3E7B2E")
   ],
   window(W, H, u) {
     const { s, cx, cy } = pizzaGeo(W, H, u);
@@ -3039,25 +3313,25 @@ var pizzaWhole = {
       ctx.arc(x, y, R.w * 0.014, 0, Math.PI * 2);
       ctx.stroke();
     }
-    if (wide(W, H)) {
+    if (wide2(W, H)) {
       const box = { x: R.x + R.w + 70 * u, y: 90 * u, w: W - R.x - R.w - 150 * u, h: H - 180 * u };
       stack(ctx, [
         { s: f.eventName.toUpperCase(), px: 96 * u, font: BEBAS, color: pal.fg, gap: 20 * u },
         { s: nameOf(f), px: 80 * u, font: BEBAS, color: pal.accent },
         { s: lineOf(f) && `\u201C${lineOf(f)}\u201D`, px: 38 * u, font: SERIF_I, color: pal.fg, gap: 14 * u },
-        { s: placeDate(f).toUpperCase(), px: 26 * u, font: MONO, color: withA(pal.fg, 0.8) }
+        { s: placeDate(f).toUpperCase(), px: 26 * u, font: MONO2, color: withA2(pal.fg, 0.8) }
       ], box);
       logo(ctx, f, box.x + box.w / 2, H - 110 * u, 46 * u);
     } else {
-      say(ctx, f.eventName.toUpperCase(), W / 2, R.y / 2 + 10 * u, W - 160 * u, Math.min(110 * u, R.y * 0.5), BEBAS, pal.fg);
+      say2(ctx, f.eventName.toUpperCase(), W / 2, R.y / 2 + 10 * u, W - 160 * u, Math.min(110 * u, R.y * 0.5), BEBAS, pal.fg);
       const used = logo(ctx, f, W / 2, H - 100 * u, 44 * u);
       stack(ctx, [
         { s: nameOf(f), px: 88 * u, font: BEBAS, color: pal.fg },
         { s: lineOf(f) && `\u201C${lineOf(f)}\u201D`, px: 36 * u, font: SERIF_I, color: pal.fg, gap: 10 * u },
-        { s: placeDate(f).toUpperCase(), px: 24 * u, font: MONO, color: withA(pal.fg, 0.8) }
+        { s: placeDate(f).toUpperCase(), px: 24 * u, font: MONO2, color: withA2(pal.fg, 0.8) }
       ], { x: 100 * u, y: R.y + R.h + 24 * u, w: W - 200 * u, h: H - (R.y + R.h) - 40 * u - (used ? 120 * u : 30 * u) });
     }
-    credit(ctx, f, withA(pal.fg, 0.55));
+    credit(ctx, f, withA2(pal.fg, 0.55));
   }
 };
 var tableBands = (W, H) => tallness(W, H) >= 1.5 ? [250, 560] : tallness(W, H) >= 1.2 ? [210, 430] : [170, 330];
@@ -3066,7 +3340,7 @@ function gingham(ctx, f) {
   ctx.fillStyle = "#FFFFFF";
   ctx.fillRect(0, 0, W, H);
   const step = 108 * u;
-  ctx.fillStyle = withA(pal.accent, 0.5);
+  ctx.fillStyle = withA2(pal.accent, 0.5);
   for (let x = 0; x < W; x += step) ctx.fillRect(x, 0, step / 2, H);
   for (let y = 0; y < H; y += step) ctx.fillRect(0, y, W, step / 2);
 }
@@ -3087,22 +3361,22 @@ function chalkboard(ctx, f, b) {
   ctx.fillStyle = "rgba(255,255,255,0.05)";
   for (let i = 0; i < 260; i++) ctx.fillRect(inner.x + rnd() * inner.w, inner.y + rnd() * inner.h, 3 * u, 3 * u);
   stack(ctx, [
-    { s: word(f, "pizza-table.special", "TODAY'S SPECIAL"), px: 46 * u, font: HAND, color: withA(pal.ink, 0.85), gap: 4 * u },
-    { s: nameOf(f) || "You", px: 104 * u, font: HAND, color: pal.ink },
-    { s: lineOf(f), px: 46 * u, font: HAND, color: withA(pal.ink, 0.9), gap: 8 * u },
-    { s: placeDate(f).toUpperCase(), px: 22 * u, font: MONO, color: withA(pal.ink, 0.7) }
+    { s: word2(f, "pizza-table.special", "TODAY'S SPECIAL"), px: 46 * u, font: HAND2, color: withA2(pal.ink, 0.85), gap: 4 * u },
+    { s: nameOf(f) || "You", px: 104 * u, font: HAND2, color: pal.ink },
+    { s: lineOf(f), px: 46 * u, font: HAND2, color: withA2(pal.ink, 0.9), gap: 8 * u },
+    { s: placeDate(f).toUpperCase(), px: 22 * u, font: MONO2, color: withA2(pal.ink, 0.7) }
   ], { x: inner.x + 30 * u, y: inner.y + 14 * u, w: inner.w - 60 * u, h: inner.h - 28 * u });
 }
 var pizzaTable = {
   label: "\u{1F377} Pizzeria table",
   group: GROUP,
   palettes: () => [
-    P2("Red check", "#FFFFFF", "#C8262B", "#8C8478", "#1F2A24", "#F2F2EA", "#C8262B", "#7A4A26"),
-    P2("Blue check", "#FFFFFF", "#2457A6", "#8C8478", "#1F2A24", "#F2F2EA", "#2457A6", "#7A4A26"),
-    P2("Green check", "#FFFFFF", "#2E7D32", "#8C8478", "#1F2A24", "#F2F2EA", "#2E7D32", "#7A4A26")
+    P3("Red check", "#FFFFFF", "#C8262B", "#8C8478", "#1F2A24", "#F2F2EA", "#C8262B", "#7A4A26"),
+    P3("Blue check", "#FFFFFF", "#2457A6", "#8C8478", "#1F2A24", "#F2F2EA", "#2457A6", "#7A4A26"),
+    P3("Green check", "#FFFFFF", "#2E7D32", "#8C8478", "#1F2A24", "#F2F2EA", "#2E7D32", "#7A4A26")
   ],
   window(W, H, u) {
-    if (wide(W, H)) return { x: 110 * u, y: 150 * u, w: W * 0.56 - 110 * u, h: H - 260 * u };
+    if (wide2(W, H)) return { x: 110 * u, y: 150 * u, w: W * 0.56 - 110 * u, h: H - 260 * u };
     const [top, bottom] = tableBands(W, H);
     return { x: 130 * u, y: top * u, w: W - 260 * u, h: H - (top + bottom) * u };
   },
@@ -3110,7 +3384,7 @@ var pizzaTable = {
   back(ctx, f) {
     const { W, H, u, R, pal } = f;
     gingham(ctx, f);
-    const top = wide(W, H) ? { x: R.x, y: 30 * u, w: R.w, h: R.y - 50 * u } : { x: 100 * u, y: 40 * u, w: W - 200 * u, h: R.y - 80 * u };
+    const top = wide2(W, H) ? { x: R.x, y: 30 * u, w: R.w, h: R.y - 50 * u } : { x: 100 * u, y: 40 * u, w: W - 200 * u, h: R.y - 80 * u };
     ctx.font = BEBAS(Math.min(90 * u, top.h * 0.62));
     const tw = Math.min(top.w, ctx.measureText(f.eventName.toUpperCase()).width + 80 * u);
     const label = { x: top.x + (top.w - tw) / 2, y: top.y + top.h * 0.12, w: tw, h: top.h * 0.76 };
@@ -3121,7 +3395,7 @@ var pizzaTable = {
     roundRect(ctx, label, 16 * u);
     ctx.fill();
     ctx.restore();
-    say(ctx, f.eventName.toUpperCase(), label.x + label.w / 2, label.y + label.h / 2 + 4 * u, label.w - 40 * u, Math.min(90 * u, top.h * 0.6), BEBAS, pal.fg);
+    say2(ctx, f.eventName.toUpperCase(), label.x + label.w / 2, label.y + label.h / 2 + 4 * u, label.w - 40 * u, Math.min(90 * u, top.h * 0.6), BEBAS, pal.fg);
     ctx.save();
     ctx.shadowColor = "rgba(0,0,0,0.35)";
     ctx.shadowBlur = 26 * u;
@@ -3132,7 +3406,7 @@ var pizzaTable = {
   },
   front(ctx, f) {
     const { W, H, u, R } = f;
-    if (wide(W, H)) {
+    if (wide2(W, H)) {
       const x = R.x + R.w + 70 * u;
       chalkboard(ctx, f, { x, y: 120 * u, w: W - x - 90 * u, h: H - 240 * u });
       logo(ctx, f, x + (W - x - 90 * u) / 2, H - 100 * u, 40 * u);
@@ -3164,7 +3438,7 @@ function nftOf(f) {
   const seed = hash(`${nameOf(f).toLowerCase()}|${f.eventName}`);
   const rnd = seeded(seed);
   const number = 1 + Math.floor(rnd() * 1e4);
-  const typed = word(f, "pizza-nft.rarity", "").trim().toLowerCase();
+  const typed = word2(f, "pizza-nft.rarity", "").trim().toLowerCase();
   let rarity = RARITIES.find((r) => r.name.toLowerCase() === typed);
   if (!rarity) {
     let roll = rnd() * 100;
@@ -3174,7 +3448,7 @@ function nftOf(f) {
   return { number, rarity, traits };
 }
 function nftCard(W, H, u) {
-  if (wide(W, H)) {
+  if (wide2(W, H)) {
     const h2 = H - 120 * u;
     return { x: 80 * u, y: 60 * u, w: W - 160 * u, h: h2 };
   }
@@ -3188,19 +3462,19 @@ function stars(ctx, f) {
   ctx.fillStyle = pal.bg;
   ctx.fillRect(0, 0, W, H);
   const g = ctx.createRadialGradient(W / 2, H * 0.3, 0, W / 2, H * 0.3, Math.max(W, H) * 0.7);
-  g.addColorStop(0, withA(pal.accent2, 0.18));
-  g.addColorStop(1, withA(pal.bg, 0));
+  g.addColorStop(0, withA2(pal.accent2, 0.18));
+  g.addColorStop(1, withA2(pal.bg, 0));
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, W, H);
   const rnd = seeded(77);
   for (let i = 0; i < 90; i++) {
-    ctx.fillStyle = withA("#FFFFFF", 0.25 + rnd() * 0.6);
+    ctx.fillStyle = withA2("#FFFFFF", 0.25 + rnd() * 0.6);
     const r = (0.8 + rnd() * 2.2) * u;
     ctx.beginPath();
     ctx.arc(rnd() * W, rnd() * H, r, 0, Math.PI * 2);
     ctx.fill();
   }
-  ctx.strokeStyle = withA(pal.accent, 0.8);
+  ctx.strokeStyle = withA2(pal.accent, 0.8);
   ctx.lineWidth = 3 * u;
   for (let i = 0; i < 6; i++) {
     const x = rnd() * W;
@@ -3218,13 +3492,13 @@ var pizzaNft = {
   label: "\u{1F0CF} Rare Pizza card",
   group: GROUP,
   palettes: () => [
-    P2("Night sky", "#070B1A", "#FEFDFA", "#9AA4BF", "#121A33", "#FEFDFA", "#FFD23D", "#7B5CFF"),
-    P2("Pizza red", "#3A0A08", "#FEFDFA", "#E8B4AE", "#1C0D0B", "#FEFDFA", "#FFD23D", "#FF393A"),
-    P2("Grail gold", "#141008", "#FFF6DC", "#C9B98A", "#211A0C", "#FFF6DC", "#FBBF24", "#FF8A28")
+    P3("Night sky", "#070B1A", "#FEFDFA", "#9AA4BF", "#121A33", "#FEFDFA", "#FFD23D", "#7B5CFF"),
+    P3("Pizza red", "#3A0A08", "#FEFDFA", "#E8B4AE", "#1C0D0B", "#FEFDFA", "#FFD23D", "#FF393A"),
+    P3("Grail gold", "#141008", "#FFF6DC", "#C9B98A", "#211A0C", "#FFF6DC", "#FBBF24", "#FF8A28")
   ],
   window(W, H, u) {
     const c = nftCard(W, H, u);
-    if (wide(W, H)) {
+    if (wide2(W, H)) {
       const s = c.h - 80 * u;
       return { x: c.x + 40 * u, y: c.y + 40 * u, w: s, h: s };
     }
@@ -3239,7 +3513,7 @@ var pizzaNft = {
     const c = nftCard(W, H, u);
     const { rarity } = nftOf(f);
     ctx.save();
-    ctx.shadowColor = withA(rarity.color, 0.55);
+    ctx.shadowColor = withA2(rarity.color, 0.55);
     ctx.shadowBlur = 50 * u;
     ctx.fillStyle = pal.paper;
     roundRect(ctx, c, 28 * u);
@@ -3252,55 +3526,55 @@ var pizzaNft = {
     ctx.fillStyle = "#6B4226";
     roundRect(ctx, { x: R.x - 8 * u, y: R.y - 8 * u, w: R.w + 16 * u, h: R.h + 16 * u }, 14 * u);
     ctx.fill();
-    const top = wide(W, H) ? { x: R.x + R.w + 50 * u, y: c.y + 40 * u, w: c.x + c.w - (R.x + R.w) - 90 * u } : { x: c.x + 30 * u, y: c.y + 14 * u, w: c.w - 60 * u };
-    const hy = wide(W, H) ? top.y + 26 * u : (c.y + R.y) / 2 + 2 * u;
-    const hp = wide(W, H) ? 28 * u : Math.min(28 * u, (R.y - c.y) * 0.42);
-    say(ctx, word(f, "pizza-nft.collection", "RARE PIZZA").toUpperCase(), top.x, hy, top.w * 0.6, hp, MONO, pal.accent, "left");
-    text(ctx, "1 OF 1", top.x + top.w, hy, MONO(hp * 0.85), withA(pal.ink, 0.6), "right");
+    const top = wide2(W, H) ? { x: R.x + R.w + 50 * u, y: c.y + 40 * u, w: c.x + c.w - (R.x + R.w) - 90 * u } : { x: c.x + 30 * u, y: c.y + 14 * u, w: c.w - 60 * u };
+    const hy = wide2(W, H) ? top.y + 26 * u : (c.y + R.y) / 2 + 2 * u;
+    const hp = wide2(W, H) ? 28 * u : Math.min(28 * u, (R.y - c.y) * 0.42);
+    say2(ctx, word2(f, "pizza-nft.collection", "RARE PIZZA").toUpperCase(), top.x, hy, top.w * 0.6, hp, MONO2, pal.accent, "left");
+    text(ctx, "1 OF 1", top.x + top.w, hy, MONO2(hp * 0.85), withA2(pal.ink, 0.6), "right");
   },
   front(ctx, f) {
     const { W, H, u, R, pal } = f;
     const c = nftCard(W, H, u);
     const { number, rarity, traits } = nftOf(f);
-    const box = wide(W, H) ? { x: R.x + R.w + 50 * u, y: c.y + 90 * u, w: c.x + c.w - (R.x + R.w) - 90 * u, h: c.h - 130 * u } : { x: c.x + 30 * u, y: R.y + R.h + 22 * u, w: c.w - 60 * u, h: c.y + c.h - (R.y + R.h) - 44 * u };
+    const box = wide2(W, H) ? { x: R.x + R.w + 50 * u, y: c.y + 90 * u, w: c.x + c.w - (R.x + R.w) - 90 * u, h: c.h - 130 * u } : { x: c.x + 30 * u, y: R.y + R.h + 22 * u, w: c.w - 60 * u, h: c.y + c.h - (R.y + R.h) - 44 * u };
     const units = 8.6;
     const k = box.h / units;
     const px = Math.min(30 * u, k * 0.5);
     let y = box.y;
     const title = `${nameOf(f) || "Unnamed Pizza"} #${number}`;
-    say(ctx, title, box.x, y + k * 0.62, box.w, Math.min(64 * u, k * 1.05), BEBAS, pal.ink, "left");
+    say2(ctx, title, box.x, y + k * 0.62, box.w, Math.min(64 * u, k * 1.05), BEBAS, pal.ink, "left");
     y += k * 1.35;
-    ctx.font = MONO(px * 0.95);
+    ctx.font = MONO2(px * 0.95);
     const bw = ctx.measureText(rarity.name.toUpperCase()).width + px * 1.6;
-    ctx.fillStyle = withA(rarity.color, 0.18);
+    ctx.fillStyle = withA2(rarity.color, 0.18);
     roundRect(ctx, { x: box.x, y, w: bw, h: k * 0.85 }, k * 0.42);
     ctx.fill();
     ctx.strokeStyle = rarity.color;
     ctx.lineWidth = 2.5 * u;
     ctx.stroke();
-    text(ctx, rarity.name.toUpperCase(), box.x + bw / 2, y + k * 0.44, MONO(px * 0.95), rarity.color);
-    if (lineOf(f)) say(ctx, `\u201C${lineOf(f)}\u201D`, box.x + bw + px, y + k * 0.44, box.w - bw - px, px * 1.05, SERIF_I, withA(pal.ink, 0.85), "left");
+    text(ctx, rarity.name.toUpperCase(), box.x + bw / 2, y + k * 0.44, MONO2(px * 0.95), rarity.color);
+    if (lineOf(f)) say2(ctx, `\u201C${lineOf(f)}\u201D`, box.x + bw + px, y + k * 0.44, box.w - bw - px, px * 1.05, SERIF_I, withA2(pal.ink, 0.85), "left");
     y += k * 1.25;
     const cw = (box.w - 14 * u) / 2;
     traits.forEach(([key, value], i) => {
       const x = box.x + i % 2 * (cw + 14 * u);
       const ty = y + Math.floor(i / 2) * k * 1.55;
-      ctx.fillStyle = withA(pal.accent2, 0.16);
+      ctx.fillStyle = withA2(pal.accent2, 0.16);
       roundRect(ctx, { x, y: ty, w: cw, h: k * 1.35 }, 12 * u);
       ctx.fill();
-      text(ctx, key.toUpperCase(), x + cw / 2, ty + k * 0.38, MONO(px * 0.7), withA(pal.ink, 0.6));
-      say(ctx, value, x + cw / 2, ty + k * 0.92, cw - 16 * u, px * 1.05, SANS, pal.ink);
+      text(ctx, key.toUpperCase(), x + cw / 2, ty + k * 0.38, MONO2(px * 0.7), withA2(pal.ink, 0.6));
+      say2(ctx, value, x + cw / 2, ty + k * 0.92, cw - 16 * u, px * 1.05, SANS, pal.ink);
     });
     y += k * 3.2;
     const minted = ["MINTED AT", f.eventName, placeDate(f)].filter(Boolean).join(" \xB7 ").toUpperCase();
-    say(ctx, minted, box.x, y + k * 0.45, box.w * (f.brand?.sponsor ? 0.68 : 1), px * 0.72, MONO, withA(pal.ink, 0.7), "left");
+    say2(ctx, minted, box.x, y + k * 0.45, box.w * (f.brand?.sponsor ? 0.68 : 1), px * 0.72, MONO2, withA2(pal.ink, 0.7), "left");
     if (f.brand?.sponsor) {
       const probe = document.createElement("canvas").getContext("2d");
       const lh = Math.min(40 * u, k * 0.8);
       const lw = probe ? drawSponsorLogo(probe, f.sponsor, 0, 0, lh) : 0;
       if (lw > 0) sponsorLogo(ctx, f.sponsor, box.x + box.w - lw, y + k * 0.45 - lh / 2, lh);
     }
-    credit(ctx, f, withA(pal.fg, 0.5));
+    credit(ctx, f, withA2(pal.fg, 0.5));
   }
 };
 var SLOTS = [
@@ -3335,278 +3609,8 @@ function registerPizzaPack() {
 }
 registerPizzaPack();
 
-// src/packs/festive.ts
-var P3 = (name, bg, fg, muted, paper, ink, accent, accent2) => ({ name, bg, fg, muted, paper, ink, accent, accent2 });
-var wide2 = (W, H) => W > 1.3 * H;
-var TILT = -0.03;
-var SERIF = (px) => `italic 700 ${px}px "Playfair Display", Georgia, serif`;
-var HAND2 = (px) => `700 ${px}px Caveat, "Comic Sans MS", cursive`;
-var MONO2 = (px) => F.mono(px, 600);
-var word2 = (f, id, fallback) => {
-  const w = f.words?.[id];
-  return w === void 0 ? fallback : w;
-};
-function say2(ctx, s, x, y, maxW, px, font, color2, align = "center") {
-  if (!s) return;
-  let size = px;
-  ctx.font = font(size);
-  while (size > px * 0.5 && ctx.measureText(s).width > maxW) {
-    size *= 0.94;
-    ctx.font = font(size);
-  }
-  let out = s;
-  while (out.length > 1 && ctx.measureText(out).width > maxW) out = out.slice(0, -2) + "\u2026";
-  text(ctx, out, x, y, font(size), color2, align);
-}
-function backPrint(f) {
-  const { R, u, W, H } = f;
-  if (wide2(W, H)) return { x: R.x + R.w * 0.5, y: R.y + 70 * u, w: R.w * 0.78, h: R.h * 0.85 };
-  return { x: R.x + 46 * u, y: R.y + R.h * 0.62, w: R.w - 30 * u, h: R.h * 0.9 };
-}
-function print(ctx, r, rot, u, border, photo) {
-  const pad = 16 * u;
-  ctx.save();
-  ctx.translate(r.x + r.w / 2, r.y + r.h / 2);
-  ctx.rotate(rot);
-  ctx.shadowColor = "rgba(0,0,0,0.22)";
-  ctx.shadowBlur = 28 * u;
-  ctx.shadowOffsetY = 10 * u;
-  ctx.fillStyle = border;
-  ctx.fillRect(-r.w / 2 - pad, -r.h / 2 - pad, r.w + pad * 2, r.h + pad * 2);
-  ctx.shadowColor = "transparent";
-  if (photo) {
-    ctx.beginPath();
-    ctx.rect(-r.w / 2, -r.h / 2, r.w, r.h);
-    ctx.clip();
-    const k = Math.max(r.w / photo.width, r.h / photo.height);
-    ctx.drawImage(photo, -(photo.width * k) / 2, -(photo.height * k) / 2, photo.width * k, photo.height * k);
-  }
-  ctx.restore();
-}
-function diya(ctx, x, top, len, s, gold, flame) {
-  ctx.save();
-  ctx.strokeStyle = gold;
-  ctx.fillStyle = gold;
-  ctx.lineWidth = 2.4 * s;
-  ctx.lineCap = "round";
-  const link = 14 * s;
-  for (let y2 = top; y2 < top + len - link; y2 += link) {
-    ctx.beginPath();
-    ctx.ellipse(x, y2 + link / 2, 3.2 * s, link / 2 - 1 * s, 0, 0, Math.PI * 2);
-    ctx.stroke();
-  }
-  const mid = top + len * 0.55;
-  ctx.beginPath();
-  ctx.arc(x, mid, 7 * s, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.moveTo(x - 12 * s, mid + 26 * s);
-  ctx.quadraticCurveTo(x - 11 * s, mid + 6 * s, x, mid + 6 * s);
-  ctx.quadraticCurveTo(x + 11 * s, mid + 6 * s, x + 12 * s, mid + 26 * s);
-  ctx.closePath();
-  ctx.stroke();
-  const y = top + len;
-  const bw = 46 * s;
-  ctx.beginPath();
-  ctx.moveTo(x, y - 30 * s);
-  ctx.lineTo(x - bw * 0.8, y);
-  ctx.moveTo(x, y - 30 * s);
-  ctx.lineTo(x + bw * 0.8, y);
-  ctx.moveTo(x, y - 30 * s);
-  ctx.lineTo(x, y);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.ellipse(x, y, bw, 8 * s, 0, 0, Math.PI * 2);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x - bw, y);
-  ctx.quadraticCurveTo(x, y + 46 * s, x + bw, y);
-  ctx.stroke();
-  ctx.beginPath();
-  ctx.moveTo(x - bw * 0.35, y + 26 * s);
-  ctx.lineTo(x - bw * 0.25, y + 40 * s);
-  ctx.lineTo(x + bw * 0.25, y + 40 * s);
-  ctx.lineTo(x + bw * 0.35, y + 26 * s);
-  ctx.stroke();
-  const g = ctx.createRadialGradient(x, y - 14 * s, 0, x, y - 14 * s, 60 * s);
-  g.addColorStop(0, withA(flame, 0.45));
-  g.addColorStop(1, withA(flame, 0));
-  ctx.fillStyle = g;
-  ctx.fillRect(x - 60 * s, y - 74 * s, 120 * s, 120 * s);
-  ctx.fillStyle = flame;
-  ctx.beginPath();
-  ctx.moveTo(x, y - 30 * s);
-  ctx.bezierCurveTo(x + 10 * s, y - 16 * s, x + 9 * s, y - 4 * s, x, y - 2 * s);
-  ctx.bezierCurveTo(x - 9 * s, y - 4 * s, x - 10 * s, y - 16 * s, x, y - 30 * s);
-  ctx.fill();
-  ctx.restore();
-}
-function mandala(ctx, cx, cy, r, gold, s) {
-  ctx.save();
-  ctx.strokeStyle = gold;
-  ctx.fillStyle = gold;
-  ctx.lineWidth = 2 * s;
-  ctx.globalAlpha *= 0.7;
-  for (const [k, n, petal] of [[0.22, 8, 0.12], [0.42, 12, 0.14], [0.66, 16, 0.16], [0.9, 24, 0.12]]) {
-    ctx.beginPath();
-    ctx.arc(cx, cy, r * k, 0, Math.PI * 2);
-    ctx.stroke();
-    for (let i = 0; i < n; i++) {
-      const a = i / n * Math.PI * 2;
-      ctx.save();
-      ctx.translate(cx + Math.cos(a) * r * (k + petal * 0.55), cy + Math.sin(a) * r * (k + petal * 0.55));
-      ctx.rotate(a);
-      ctx.beginPath();
-      ctx.ellipse(0, 0, r * petal * 0.55, r * petal * 0.22, 0, 0, Math.PI * 2);
-      ctx.stroke();
-      ctx.restore();
-      ctx.beginPath();
-      ctx.arc(cx + Math.cos(a + Math.PI / n) * r * (k + petal), cy + Math.sin(a + Math.PI / n) * r * (k + petal), 2.6 * s, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  }
-  ctx.beginPath();
-  ctx.arc(cx, cy, r * 0.08, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-function collageGeo(W, H, u) {
-  const k = 0.72;
-  if (W >= H * 0.95 && !wide2(W, H)) {
-    const w2 = (W - 120 * u) / 2.05;
-    const h2 = w2 * k;
-    const main2 = { x: 60 * u, y: 70 * u, w: w2, h: h2 };
-    const second2 = { x: main2.x + w2 * 0.6, y: main2.y + h2 * 0.45, w: w2, h: h2 };
-    const third2 = { x: main2.x + w2 * 1.2, y: main2.y + h2 * 0.9, w: w2, h: h2 };
-    const box2 = (bottom) => ({ x: 100 * u, y: bottom + 36 * u, w: W - 200 * u, h: H - bottom - 100 * u });
-    return { main: main2, second: second2, third: third2, text2: box2(second2.y + h2), text3: box2(third2.y + h2) };
-  }
-  if (W >= H * 0.95) {
-    const w2 = Math.min((W - 200 * u) / 2.6, (H - 330 * u) / (k * 1.3));
-    const h2 = w2 * k;
-    const x0 = (W - w2 * 2.6) / 2;
-    const main2 = { x: x0, y: 110 * u, w: w2, h: h2 };
-    const second2 = { x: x0 + w2 * 0.8, y: main2.y + h2 * 0.3, w: w2, h: h2 };
-    const third2 = { x: x0 + w2 * 1.6, y: main2.y + h2 * 0.05, w: w2, h: h2 };
-    const top = second2.y + h2 + 50 * u;
-    const text2 = { x: 100 * u, y: top, w: W - 200 * u, h: H - top - 70 * u };
-    return { main: main2, second: second2, third: third2, text2, text3: text2 };
-  }
-  const w = Math.min(W * 0.72, (H - 360 * u) / (k * 2.6));
-  const h = w * k;
-  const main = { x: 80 * u, y: (H / W >= 1.5 ? 150 : 90) * u, w, h };
-  const second = { x: W - 80 * u - w, y: main.y + h * 0.8, w, h };
-  const third = { x: 100 * u, y: second.y + h * 0.8, w, h };
-  const box = (top) => ({ x: 110 * u, y: top + 40 * u, w: W - 220 * u, h: H - top - 110 * u });
-  return { main, second, third, text2: box(second.y + h), text3: box(third.y + h) };
-}
-function printsFrame(o) {
-  const collage = !o.decorated;
-  return {
-    label: o.label,
-    group: o.group,
-    palettes: o.palettes,
-    window(W, H, u) {
-      if (collage) return collageGeo(W, H, u).main;
-      if (wide2(W, H)) return { x: 120 * u, y: 150 * u, w: W * 0.5, h: H * 0.56 };
-      const t = H / W;
-      const w = W - (t >= 1.5 ? 200 : 240) * u;
-      const h = t >= 1.5 ? w * (collage ? 0.72 : 0.8) : t >= 1.2 ? w * 0.6 : w * 0.52;
-      return { x: (W - w) / 2 - 10 * u, y: (t >= 1.5 ? collage ? 200 : 250 : t >= 1.2 ? 170 : 120) * u, w, h };
-    },
-    tilt: TILT,
-    ownsText: true,
-    marks: ["tl", "tr"],
-    back(ctx, f) {
-      const { W, H, u, R, pal } = f;
-      ctx.fillStyle = pal.bg;
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = withA(pal.ink, 0.025);
-      for (let i = 0; i < 1600; i++) ctx.fillRect(i * 7919 % W, i * 104729 % H, 2 * u, 2 * u);
-      if (o.decorated) mandala(ctx, W * 0.04, H * (wide2(W, H) ? 0.92 : 0.9), Math.min(W, H) * 0.34, pal.accent, u);
-      const photos = f.photos ?? [];
-      if (collage) {
-        const g = collageGeo(W, H, u);
-        if (photos[2]) print(ctx, g.third, -0.02, u, pal.paper, photos[2]);
-        print(ctx, g.second, 0.025, u, pal.paper, photos[1] ?? photos[0]);
-      } else {
-        print(ctx, backPrint(f), 0.012, u, pal.paper, photos[1] ?? photos[0]);
-      }
-      print(ctx, R, TILT, u, pal.paper);
-    },
-    front(ctx, f) {
-      const { W, H, u, R, pal } = f;
-      const tall = H / W >= 1.5;
-      if (o.decorated) {
-        const s = Math.min(W, H) / 1080;
-        const lamps = wide2(W, H) ? [[60, 220], [150, 360], [240, 150]] : tall ? [[70, 300], [165, 500], [260, 210]] : [[70, 260], [160, 420], [250, 180]];
-        for (const [x, len] of lamps) diya(ctx, x * s, -10 * s, len * s, s, pal.accent, pal.accent2);
-      }
-      const back = backPrint(f);
-      const g = collage ? collageGeo(W, H, u) : null;
-      const below = g ? (f.photos ?? []).length >= 3 ? g.text3 : g.text2 : wide2(W, H) ? { x: R.x + R.w * 0.62, y: back.y + back.h + 40 * u, w: W - R.x - R.w * 0.62 - 90 * u, h: H - back.y - back.h - 80 * u } : { x: 120 * u, y: back.y + back.h + 40 * u, w: W - 240 * u, h: H - back.y - back.h - 90 * u };
-      const title = word2(f, `${o.id}.title`, f.eventName);
-      const name = f.journey.name.trim();
-      const line = (f.text ?? "").trim() || word2(f, `${o.id}.note`, "");
-      const place = [f.brand?.place, f.eventDates].filter(Boolean).join(" \xB7 ").toUpperCase();
-      const lines = [
-        [title, 64, SERIF, pal.fg],
-        [name, 62, HAND2, pal.ink],
-        [line, 44, HAND2, withA(pal.ink, 0.85)],
-        [place, 22, MONO2, pal.accent]
-      ].filter(([s]) => s);
-      const big = tall ? 1.45 : 1;
-      for (const l of lines) l[1] *= big;
-      const total = lines.reduce((t, [, px]) => t + px * 1.3 * u, 0);
-      const k = below.h > 0 ? Math.min(1, below.h / total) : 0.5;
-      let y = below.y + Math.max(0, (below.h - total * k) / 2);
-      for (const [s2, px, font, color2] of lines) {
-        y += px * 0.65 * u * k;
-        say2(ctx, s2, below.x + below.w / 2, y, below.w, px * u * k, font, color2);
-        y += px * 0.65 * u * k;
-      }
-      text(ctx, f.brand?.credit || CREDIT_LINE, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
-    }
-  };
-}
-var festivePrints = printsFrame({
-  id: "festive-prints",
-  label: "\u{1FA94} Festive prints",
-  group: "Festive",
-  decorated: true,
-  palettes: () => [
-    P3("Cream & gold", "#ECE8E1", "#5A3E2B", "#8C7A6B", "#FFFFFF", "#4A3527", "#C9973C", "#E8892B"),
-    P3("Maroon night", "#3B0E14", "#F6E7C8", "#C9A98A", "#FBF6EC", "#F6E7C8", "#D8A845", "#FF9D3D"),
-    P3("Ivory & marigold", "#FBF4E4", "#7A2E12", "#A7826A", "#FFFFFF", "#5B2A12", "#D9902A", "#E8642B")
-  ]
-});
-var printsCollage = printsFrame({
-  id: "prints-collage",
-  label: "\u{1F5BC}\uFE0F Prints collage",
-  group: "Clean",
-  decorated: false,
-  palettes: () => [
-    P3("Paper", "#ECE8E1", "#3A3530", "#8C847A", "#FFFFFF", "#3A3530", "#8C7A6B", "#C9973C"),
-    P3("White", "#F7F7F5", "#222222", "#8A8A8A", "#FFFFFF", "#222222", "#555555", "#999999"),
-    P3("Black", "#111111", "#F2F2F2", "#9A9A9A", "#FAFAFA", "#F2F2F2", "#BDBDBD", "#888888"),
-    P3("Kraft", "#C9A27A", "#2E2117", "#6E5440", "#FBF7F0", "#2E2117", "#5A3E2B", "#8C6A4A")
-  ]
-});
-var done2 = false;
-function registerFestiveFrames() {
-  if (done2) return;
-  done2 = true;
-  registerFrame("festive-prints", festivePrints, { best: "Family, friends, festive evenings", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "dhol"], group: "Festive", ownColors: true });
-  registerWordSlot({ id: "festive-prints.title", frame: "festive-prints", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
-  registerWordSlot({ id: "festive-prints.note", frame: "festive-prints", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
-  registerFrame("prints-collage", printsCollage, { best: "Two or three photos as prints, no decorations", ratio: "4:5", intro: "vinyl", tracks: ["chai", "sunset", "happy"], group: "Clean", ownColors: true });
-  registerWordSlot({ id: "prints-collage.title", frame: "prints-collage", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
-  registerWordSlot({ id: "prints-collage.note", frame: "prints-collage", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
-}
-registerFestiveFrames();
-
 // src/core/version.ts
-var VERSION = "1.3.0";
+var VERSION = "1.3.1";
 export {
   CONFIG_VERSION,
   PIZZA_PACK,

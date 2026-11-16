@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.3.1 (2026-11-17)
+
+- The engine now comes straight from QuestPass (1667293), which took in this repo's engine changes (whole names, the frame overlay, the video-clip hooks) and the two print frames. Only the fonts patch is still local. Nothing changes for booths.
+
 ## 1.3.0 (2026-11-16)
 
 - **Video clips in the frames.** The booth has a 📸 Photo | 🎥 Video switch. In Video mode, record a clip (up to 15 s; the camera and microphone go off as soon as it ends) or choose one from the phone, trim it (up to 30 s), and it plays inside any frame. Save an MP4 with the clip's own sound, the booth's music, or both (a limiter keeps the mix clean).

@@ -13,6 +13,7 @@ import QRCode from "qrcode";
 import type { SponsorBrand } from "@/config/sponsors";
 import { C, F, clamp, drawSponsorLogo, text } from "@/features/recap/engine/draw-kit";
 import { ROLE_LOOK, firstName, roundRect, wrap, type ReelStats } from "./reel";
+import { festivePrints, printsCollage } from "./frames-prints";
 
 const easeOutK = (x: number) => 1 - Math.pow(1 - x, 3);
 
@@ -157,7 +158,7 @@ export function paletteFromAccent(base: Palette, accent: string, name = "Your co
   return { ...base, name, accent, bg: mix(accent, dark ? "#000000" : "#FFFFFF", dark ? 0.82 : 0.8) };
 }
 
-export type FrameGroup = "Fun" | "Clean" | "Retro" | "Travel" | "For devs";
+export type FrameGroup = "Fun" | "Clean" | "Retro" | "Travel" | "For devs" | "Festive";
 
 export interface FrameDef {
   label: string;
@@ -2551,6 +2552,10 @@ const DEFS = {
       ctx.restore();
     },
   },
+
+  // photo prints (./frames-prints): festive, and a plain collage
+  "festive-prints": festivePrints,
+  "prints-collage": printsCollage,
 } satisfies Record<string, FrameDef>;
 
 export type FrameId = keyof typeof DEFS;
@@ -2573,6 +2578,6 @@ export const shapeOf = (w: number, h: number): PhotoShape => (w / h > 1.2 ? "wid
 /** Frames that suit a photo of this shape, best first (each made at the shape's size: wide 16:9, square 1:1, tall its own). */
 export const FITS: Record<PhotoShape, FrameId[]> = {
   wide: ["newspaper", "cinema", "pass", "clean", "vhs", "lanyard"],
-  square: ["polaroid", "postcard", "scrapbook", "tablet", "clean", "comic"],
-  tall: ["polaroid", "booth", "neon", "magazine", "story", "pass", "comic", "film"],
+  square: ["polaroid", "postcard", "scrapbook", "tablet", "clean", "comic", "prints-collage"],
+  tall: ["polaroid", "booth", "neon", "magazine", "story", "pass", "comic", "film", "festive-prints", "prints-collage"],
 };

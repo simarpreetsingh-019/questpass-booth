@@ -47,6 +47,10 @@ export const WORD_SLOTS: WordSlot[] = [
   { id: "gamecard.class", frame: "gamecard", label: "Class", max: 18, placeholder: "Party legend", sponsor: "edit" },
   { id: "gamecard.power", frame: "gamecard", label: "Special move", max: 40, placeholder: "The perfect group selfie", sponsor: "edit" },
   { id: "code.from", frame: "code", label: "Trip from", max: 14, placeholder: "home", sponsor: "edit" },
+  { id: "festive-prints.title", frame: "festive-prints", label: "Title", max: 30, placeholder: "the title", sponsor: "fixed" },
+  { id: "festive-prints.note", frame: "festive-prints", label: "Line when people write none", max: 40, placeholder: "none", sponsor: "fixed" },
+  { id: "prints-collage.title", frame: "prints-collage", label: "Title", max: 30, placeholder: "the title", sponsor: "fixed" },
+  { id: "prints-collage.note", frame: "prints-collage", label: "Line when people write none", max: 40, placeholder: "none", sponsor: "fixed" },
 ];
 
 /** A space's setting for this booth (its own, else the default). */

@@ -1,14 +1,23 @@
 /**
- * Photo-print frames, for every booth (no pack needed): photos as prints on
- * paper. "Festive prints" adds gold line-art hanging diyas and a mandala
- * (Diwali, Lohri, Gurpurab, weddings, community evenings); "Prints collage"
- * is the same without decorations, with up to three prints.
+ * Photo-print frames: photos as prints on paper. "Festive prints" adds gold
+ * line-art hanging diyas and a mandala (Diwali, Lohri, Gurpurab, weddings,
+ * community evenings); "Prints collage" is the same without decorations,
+ * with up to three prints laid out so each shows. Shared with QuestPass
+ * Booth (github.com/simarpreetsingh-019/questpass-booth), which copies this
+ * file. Only types come from ./frames, so there's no import cycle.
  */
-import { F, text } from "../engine/upstream/draw-kit";
-import { withA, type FrameCtx, type FrameDef, type FrameGroup, type Palette, type Rect } from "../engine/upstream/frames";
-import { registerWordSlot } from "../core/config";
-import { registerFrame } from "../core/frames-meta";
-import { CREDIT_LINE } from "../core/credit";
+import { F, text } from "@/features/recap/engine/draw-kit";
+import type { FrameCtx, FrameDef, FrameGroup, Palette, Rect } from "./frames";
+
+const CREDIT = "made by @simarpreet_019";
+
+/** `c` (#RRGGBB) at opacity `a`. */
+function withA(c: string, a: number): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(c.trim());
+  if (!m) return c;
+  const v = parseInt(m[1]!, 16);
+  return `rgba(${(v >> 16) & 255},${(v >> 8) & 255},${v & 255},${a})`;
+}
 
 type Ctx = CanvasRenderingContext2D;
 type Font = (px: number) => string;
@@ -289,12 +298,12 @@ function printsFrame(o: PrintsOptions): FrameDef {
         say(ctx, s2, below.x + below.w / 2, y, below.w, px * u * k, font, color);
         y += px * 0.65 * u * k;
       }
-      text(ctx, f.brand?.credit || CREDIT_LINE, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
+      text(ctx, f.brand?.credit || CREDIT, W - 30 * u, H - 26 * u, F.mono(19 * u, 600), withA(pal.ink, 0.6), "right");
     },
   };
 }
 
-const festivePrints = printsFrame({
+export const festivePrints = printsFrame({
   id: "festive-prints",
   label: "🪔 Festive prints",
   group: "Festive",
@@ -306,7 +315,7 @@ const festivePrints = printsFrame({
   ],
 });
 
-const printsCollage = printsFrame({
+export const printsCollage = printsFrame({
   id: "prints-collage",
   label: "🖼️ Prints collage",
   group: "Clean",
@@ -319,18 +328,3 @@ const printsCollage = printsFrame({
   ],
 });
 
-let done = false;
-
-/** Add the festive frames (done once, when the booth loads). They show in every booth. */
-export function registerFestiveFrames() {
-  if (done) return;
-  done = true;
-  registerFrame("festive-prints", festivePrints, { best: "Family, friends, festive evenings", ratio: "4:5", intro: "chime", tracks: ["sunset", "chai", "dhol"], group: "Festive", ownColors: true });
-  registerWordSlot({ id: "festive-prints.title", frame: "festive-prints", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
-  registerWordSlot({ id: "festive-prints.note", frame: "festive-prints", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
-  registerFrame("prints-collage", printsCollage, { best: "Two or three photos as prints, no decorations", ratio: "4:5", intro: "vinyl", tracks: ["chai", "sunset", "happy"], group: "Clean", ownColors: true });
-  registerWordSlot({ id: "prints-collage.title", frame: "prints-collage", label: "Title", max: 30, placeholder: "the booth's title", defaultMode: "fixed" });
-  registerWordSlot({ id: "prints-collage.note", frame: "prints-collage", label: "Line when people write none", max: 40, placeholder: "none", defaultMode: "fixed" });
-}
-
-registerFestiveFrames();

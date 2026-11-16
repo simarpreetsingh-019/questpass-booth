@@ -3,7 +3,6 @@
  * Node scripts (e.g. making one booth per city from a spreadsheet).
  */
 import "../packs/pizza";
-import "../packs/festive";
 
 export { VERSION } from "./version";
 export { CONFIG_VERSION, defaultConfig, normalizeConfig, migrateConfig, offeredFrames, listWordSlots, shareTextOf, type BoothConfig } from "./config";

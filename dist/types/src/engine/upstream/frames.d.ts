@@ -97,7 +97,7 @@ export declare function lightness(c: string): number;
 export declare function paletteFromPhoto(base: Palette, img: CanvasImageSource): Palette;
 /** A palette around one colour: it becomes the accent, the backdrop a deep (or pale, for light frames) shade of it. */
 export declare function paletteFromAccent(base: Palette, accent: string, name?: string): Palette;
-export type FrameGroup = "Fun" | "Clean" | "Retro" | "Travel" | "For devs";
+export type FrameGroup = "Fun" | "Clean" | "Retro" | "Travel" | "For devs" | "Festive";
 export interface FrameDef {
     label: string;
     group: FrameGroup;
@@ -434,6 +434,8 @@ declare const DEFS: {
         back(ctx: CanvasRenderingContext2D, f: FrameCtx): void;
         front(ctx: CanvasRenderingContext2D, f: FrameCtx): void;
     };
+    "festive-prints": FrameDef;
+    "prints-collage": FrameDef;
 };
 export type FrameId = keyof typeof DEFS;
 export declare const FRAMES: Record<FrameId, FrameDef>;
